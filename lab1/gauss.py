@@ -4,6 +4,7 @@ import sys
 
 def gauss(A):
     n = len(A)	
+    # checking the main diagonal for zeros and permuting while found
     for i in range(1, n): 
         k = 0      
         while ((A[i][i] == 0 or A[k][k] == 0) and k != i):
@@ -11,12 +12,12 @@ def gauss(A):
             k += 1
             if (k == n):
                 return None            
-
+    # zeroing the bottom triangle
     for i in range(0, n):       
         for k in range(i + 1, n):
             c = A[k][i] / A[i][i]
             A[k] -= c * A[i]
-
+    # solution calculation
     x = [0 for i in range(n)]
     for i in range(n - 1, -1, -1):
         x[i] = A[i][n] / A[i][i]
@@ -24,6 +25,7 @@ def gauss(A):
             A[k][n] -= A[k][i] * x[i]
     return x
 
+# read from file and create arrays
 file = open(sys.argv[1])
 data = file.read().split();
 data = [int(i) for i in data]
