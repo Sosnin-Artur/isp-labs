@@ -6,10 +6,11 @@ setup(
     author="Sosnin Arthur",
     author_email="artursosnin2001@gmail.com",
     packages=find_packages(),
-    install_requires=['toml', 'yaml'],
+    install_requires=['toml', 'PyYAML'],
+    test_suite='unit_tests',
     entry_points={
         'console_scripts': [
-            'serializers = utilit:main',
-        ],
+            'serializers = utillit:main',            
+        ]
     }
 )
