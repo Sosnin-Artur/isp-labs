@@ -11,6 +11,7 @@ class Encoder(BaseSerializer):
         super().__init__()
         if not indent:
             indent = 0
+        
         self.indent = indent                
         self.dispatch_table[int] = self.dumps_numb
         self.dispatch_table[float]= self.dumps_numb
@@ -20,31 +21,30 @@ class Encoder(BaseSerializer):
         self.dispatch_table[list] = self.dumps_list
         self.dispatch_table[tuple] = self.dumps_list
         self.dispatch_table[dict] = self.dumps_dict    
-        # if dumps_default is not None:
-        #     self.dumps_default = dumps_default
+                        
 
-    def dumps(self, obj, nesting_lvl = 0):        
+    def dumps(self, obj, nesting_lvl=0):                
         t = type(obj)                    
-        if (t in self.dispatch_table):
+        if t in self.dispatch_table:
             f = self.dispatch_table.get(t)      
-            if (t in (types.FunctionType, types.MethodType, type)):                                                 
-                return (self.dumps_dict(f(obj)))            
+            if t in (types.FunctionType, types.MethodType, type):                                                 
+                return self.dumps_dict(f(obj))            
             return f(obj)      
         else:
             return self.dumps_dict(self.dumps_object(obj))        
     
     def dump(self, obj, file):  
-        s = self.dumps(obj)
+        dict_str = self.dumps(obj)
         if isinstance(file ,str):
             file = open(file, 'w')                      
-        file.write(s)
+        file.write(dict_str)
         
     def dumps_numb(self, obj):
-        if (obj != obj):
+        if obj != obj:
             return "NaN"
-        if (obj == float('inf')):
+        if obj == float('inf'):
             return "Infinity"
-        if (obj == -float('inf')):
+        if obj == -float('inf'):
             return "-Infinity"        
         return str(obj)
 
@@ -76,7 +76,7 @@ class Encoder(BaseSerializer):
             res += newline_indent
             t = type(value)
             f = self.dispatch_table.get(t)
-            if (t in nested_types):
+            if t in nested_types:
                 res += f(value, nesting_lvl)
             elif t in [types.FunctionType, types.MethodType, type]:                
                 res += self.dumps(value, nesting_lvl)
@@ -86,7 +86,7 @@ class Encoder(BaseSerializer):
                 res += f(value)
         if newline_indent is not None:
             nesting_lvl -= 1
-            res += ',\n' + ' ' * self.indent * nesting_lvl
+            res += ' \n' + ' ' * self.indent * nesting_lvl
         return res +  ']'
 
     def dumps_dict(self, obj, nesting_lvl = 0):
@@ -117,7 +117,7 @@ class Encoder(BaseSerializer):
                 raise TypeError("unhandled type for key")
             else:
                 res += '"' + tmp + '": '
-            if (tv in nested_types):
+            if tv in nested_types:
                 res += fv(value, nesting_lvl)
             elif tv in [types.FunctionType, types.MethodType, type]:                
                 res += self.dumps(value, nesting_lvl)
@@ -133,29 +133,30 @@ class Encoder(BaseSerializer):
 
 NUMBER_RE = re.compile(
     r'(-?(?:0|[1-9]\d*))(\.\d+)?([eE][-+]?\d+)?')
+WHITESPACE = re.compile(r'[ \t\n\r]*')
+WHITESPACE_STR = ' \t\n\r'
 
 class Scanner:
     def __init__(self, default_scan = None):
         self.default_scan = default_scan
 
-    def scan(self, string, idx):  
-        nextchar = string[idx]
-        
+    def scan(self, dict_str, ind):  
+        nextchar = dict_str[ind]         
         if nextchar == '"':
-            return self.parse_string(string, idx + 1)
+            return self.parse_string(dict_str, ind + 1)
         elif nextchar == '{':
-            return self.parse_object((string, idx + 1))
+            return self.parse_object(dict_str, ind + 1)
         elif nextchar == '[':
-            return self.parse_array((string, idx + 1))
-        elif string[idx:idx + 4] == 'null':
-            return None, idx + 4
-        elif string[idx:idx + 4] == 'true':
-            return True, idx + 4
-        elif string[idx:idx + 5] == 'false':
-            return False, idx + 5
+            return self.parse_array(dict_str, ind + 1)
+        elif dict_str[ind:ind + 4] == 'null':
+            return None, ind + 4
+        elif dict_str[ind:ind + 4] == 'true':
+            return True, ind + 4
+        elif dict_str[ind:ind + 5] == 'false':
+            return False, ind + 5
         
         match_number = NUMBER_RE.match
-        m = match_number(string, idx)
+        m = match_number(dict_str, ind)
         if m is not None:
             integer, frac, exp = m.groups()
             if frac or exp:
@@ -163,97 +164,96 @@ class Scanner:
             else:
                 res = int(integer)
             return res, m.end()
-        elif string[idx:idx + 3] == 'NaN':
-            return float('nan'), idx + 3
-        elif string[idx:idx + 8] == 'Infinity':
-            return float('inf'), idx + 8
-        elif string[idx:idx + 9] == '-Infinity':
-            return float('-inf'), idx + 9
+        elif dict_str[ind:ind + 3] == 'NaN':
+            return float('nan'), ind + 3
+        elif dict_str[ind:ind + 8] == 'Infinity':
+            return float('inf'), ind + 8
+        elif dict_str[ind:ind + 9] == '-Infinity':
+            return float('-inf'), ind + 9
         else:
-            raise StopIteration(idx)                            
+            raise StopIteration(ind)                            
         
-    def parse_string(self, s, end):        
-        prev = end  
-        end = s[prev:].find('"') + prev                                        
-        return s[prev : end], end + 1
-        
-    # Use speedup if available    
+    def parse_string(self, dict_str, ind):        
+        prev = ind  
+        ind = dict_str[prev:].find('"') + prev                                        
+        return dict_str[prev : ind], ind + 1                
 
-    WHITESPACE = re.compile(r'[ \t\n\r]*')
-    WHITESPACE_STR = ' \t\n\r'
-
-    def parse_object(self, s_and_end, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
-        s, end = s_and_end
+    def parse_object(self, dict_str, ind, _w=WHITESPACE.match, _ws=WHITESPACE_STR):        
         pairs = []
         pairs_append = pairs.append        
-        nextchar = s[end:end + 1]        
+        nextchar = dict_str[ind]        
         if nextchar != '"':
             if nextchar in _ws:
-                end = _w(s, end).end()
-                nextchar = s[end:end + 1]
+                ind = _w(dict_str, ind).end()
+                nextchar = dict_str[ind]
                
-        end += 1
+        ind += 1
         while True:            
-            key, end = self.parse_string(s, end)            
-            if s[end:end + 1] != ':':
-                end = _w(s, end).end()                
-            end += 1
+            key, ind = self.parse_string(dict_str, ind)            
+            if dict_str[ind] != ':':
+                ind = _w(dict_str, ind).end()                
+            ind += 1
 
             try:
-                if s[end] in _ws:
-                    end += 1
-                    if s[end] in _ws:
-                        end = _w(s, end + 1).end()
+                if dict_str[ind] in _ws:
+                    ind += 1
+                    if dict_str[ind] in _ws:
+                        ind = _w(dict_str, ind + 1).end()
             except IndexError:
-                pass
+                raise IndexError(ind)
             
-            value, end = self.scan(s, end)
+            value, ind = self.scan(dict_str, ind)
             pairs_append((key, value))            
-            nextchar = s[end]
+            nextchar = dict_str[ind]
             if nextchar in _ws:
-                end = _w(s, end + 1).end()
-                nextchar = s[end]            
-            end += 1
+                ind = _w(dict_str, ind + 1).end()
+                nextchar = dict_str[ind]            
+            ind += 1
 
             if nextchar == '}':
                 break                            
-            end = _w(s, end).end()
-            nextchar = s[end:end + 1]
-            end += 1            
+            ind = _w(dict_str, ind).end()
+            nextchar = dict_str[ind]
+            ind += 1            
         
         pairs = dict(pairs)        
-        return pairs, end
+        return pairs, ind
 
-    def parse_array(self, s_and_end, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
-        s, end = s_and_end
+    def parse_array(self, dict_str, ind, _w=WHITESPACE.match, _ws=WHITESPACE_STR):        
         values = []
-        nextchar = s[end:end + 1]
+        nextchar = dict_str[ind]
         if nextchar in _ws:
-            end = _w(s, end + 1).end()
-            nextchar = s[end:end + 1]        
+            ind = _w(dict_str, ind + 1).end()
+            nextchar = dict_str[ind]        
         if nextchar == ']':
-            return values, end + 1
+            return values, ind + 1
         _append = values.append
-        while True:
-            nextchar = s[end:end + 1]
-            if nextchar == ']':
-                return values, end + 1            
-            value, end = self.scan(s, end)
+        while True:            
+            value, ind = self.scan(dict_str, ind)            
             _append(value)
-            nextchar = s[end:end + 1]
+            nextchar = dict_str[ind]
             if nextchar in _ws:
-                end = _w(s, end + 1).end()
-                nextchar = s[end:end + 1]
-            end += 1
-            if s[end] in _ws:
-                end += 1
-                if s[end] in _ws:
-                    end = _w(s, end + 1).end()            
+                ind = _w(dict_str, ind + 1).end()
+                nextchar = dict_str[ind]
+            ind += 1
+            if nextchar == ']':
+                break            
+            if dict_str[ind] in _ws:
+                ind += 1
+                if dict_str[ind] in _ws:
+                    ind = _w(dict_str, ind + 1).end()
+        
 
-        return values, end
+        return values, ind
 
 class Decoder(BaseDeserializer):                
-    def loads(self, dict_str):                
+    def __init__(self, loads_default=None):
+        self.loads_default = loads_default
+
+    def loads(self, dict_str):     
+        if self.loads_default:
+            return self.loads_default(dict_str)
+
         obj = Scanner().scan(dict_str, 0)[0]    
         if isinstance(obj, dict):                      
             tp = obj.get('type')
@@ -271,38 +271,3 @@ class Decoder(BaseDeserializer):
                 return self.loads(fr.read())
         else:
            return self.loads(file.read())
-
-# class TestClass:
-#     kkk = "kkkkkkkkkkkkk"
-#     def __init__(self):
-#         self.num = 4
-#         self.numf = 4.5
-#         self.str = "fffff"        
-#         self.b = True        
-#         self.lst = [1, 2, 3, 4]         
-#         self.dct = {1 : self.lst}
-#         # self.dd = {'a': self.d, 'b': self.d}
-    
-#     def t(self):    
-#         return nnn
-
-# def t():        
-#     return nnn
-
-# nnn = 5
-# g = TestClass()
-# i = 5
-# f = 5.5
-# st = "[3, 4, 5]"
-# l = [4 , 3]
-# k = (5, 6)
-# d = {"a" : l, "b" : "ggggggggggg"}
-# dd = {'a': d, 'b': d}
-# x = lambda y : y * y
-# # print(inspect.getmembers(g.t))
-# # print(inspect.getmembers(t))
-# # print(Encoder(indent=4).dumps(g))
-# g.num = 5
-# data = ((Encoder(indent=4).dumps(g)))
-# di = Decoder().loads(data)
-# # print(di.b)

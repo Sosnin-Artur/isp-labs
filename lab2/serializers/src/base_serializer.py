@@ -43,9 +43,8 @@ class BaseSerializer:
                 attr_value = getattr(obj, attr) 
                 if 'type'  in str(attr_value.__class__): 
                     res[attr] = self.dumps_type(attr_value)
-                elif callable(attr_value):
-                    if len(inspect.getfullargspec(attr_value).args) > 1:
-                        res[attr] = self.dumps_function(attr_value)
+                if callable(attr_value):                    
+                    res[attr] = self.dumps_function(attr_value)
                 elif '__main__' in str(attr_value.__class__): 
                     res[attr] = self.dumps_object(attr_value)                    
                 else:
@@ -97,8 +96,7 @@ class BaseDeserializer:
         function_globals[name] = temp
         return types.FunctionType(code, function_globals, name)
 
-    def dict_to_object(self, dct):                  
-        # print(dct)
+    def dict_to_object(self, dct):                          
         klass = self.dict_to_class(dct['class'])        
         init_args = inspect.getfullargspec(klass).args        
         args = {}
@@ -106,48 +104,33 @@ class BaseDeserializer:
             if arg in dct:
                 args[arg] = dct[arg]        
         obj = klass(**args)                
-        for attr in dct:
-            # print(attr)
+        for attr in dct:            
             if hasattr(attr, 'startswith'):
-                if ( not attr.startswith('__')):                
-                    # print(type(dct[attr]))
+                if not attr.startswith('__'):                                    
                     if isinstance(dct[attr], dict):
-                        tmp = dct[attr].get('type')                    
-                        # print(dct[attr])
-                        if (tmp == 'func'):                        
+                        tmp = dct[attr].get('type')                                            
+                        if tmp == 'func':                        
                             setattr(obj, attr, self.dict_to_function(dct[attr]))                        
-                        # elif (tmp == 'object'):
-                        #     setattr(obj, attr, self.dict_to_object(dct[attr]))
-                        # elif (tmp == 'class'):
-                        #     setattr(obj, attr, self.dict_to_class(dct[attr]))
+                        elif tmp == 'object':
+                            setattr(obj, attr, self.dict_to_object(dct[attr]))
+                        elif tmp == 'class':
+                            setattr(obj, attr, self.dict_to_class(dct[attr]))
                     else:
                         setattr(obj, attr, dct[attr])
             else:
-                setattr(obj, attr, dct[attr])
-                
-        # for attr in obj.__dir__():
-        #     if isinstance(getattr(obj, attr), dict) and not attr.startswith('__'):
-                
-        #         object_attr = self.dict_to_object(getattr(obj, attr))
-        #         setattr(obj, attr, object_attr)
-        #     elif not attr.startswith('__') and attr not in args:
-        #         object_attr = getattr(obj, attr)
-        #         if not callable(object_attr):
-        #             setattr(obj, attr, dct[attr])
-        
+                setattr(obj, attr, dct[attr])                        
         return obj
 
     def dict_to_class(self, dct):        
-        args = {}        
-        # print(dct)
+        args = {}                
         for attr in dct:                                      
             if isinstance(dct[attr], dict):                
                 if dct[attr]['type'] == 'func':
                     args[attr] = self.dict_to_function(dct[attr])
-                # if dct[attr]['type'] == 'class':
-                #     args[attr] = self.dict_to_class(dct[attr])
-                # if dct[attr]['type'] == 'object':
-                #     args[attr] = self.dict_to_object(dct[attr])
+                if dct[attr]['type'] == 'class':
+                    args[attr] = self.dict_to_class(dct[attr])
+                if dct[attr]['type'] == 'object':
+                    args[attr] = self.dict_to_object(dct[attr])
             else:
                 args[attr] = dct[attr]
         tmp = dct['class_name']        
