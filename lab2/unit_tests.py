@@ -63,7 +63,7 @@ class TestPacker(unittest.TestCase):
     def test_method_json(self):
         data = self.serializer.dumps(self.obj.t)
         self.assertEqual(self.deserializer.loads(data)(self.obj), {'a' : 'aaaa'}) 
-
+    
     def test_recursion_json(self):
         data = self.serializer.dumps(fact)
         self.assertIsInstance(self.deserializer.loads(data), types.FunctionType)
@@ -231,6 +231,13 @@ class TestPacker(unittest.TestCase):
         tmp = fact
         test = self.deserializer.loads(self.serializer.dumps(tmp))        
         self.assertEqual(tmp(2), test(2))            
+    
+    def test_labmda_pickle(self):
+        self.serializer = Creator.create_serializer('pickle')  
+        self.deserializer = Creator.create_deserializer('pickle')        
+        tmp = x
+        test = self.deserializer.loads(self.serializer.dumps(tmp))        
+        self.assertEqual(tmp(2), test(2))            
 
     def test_class_pickle(self):        
         self.serializer = Creator.create_serializer('pickle')  
@@ -244,7 +251,7 @@ class TestPacker(unittest.TestCase):
         self.deserializer = Creator.create_deserializer('pickle')        
         tmp = TestClass.cl
         test = self.deserializer.loads(self.serializer.dumps(tmp))        
-        self.assertEqual(tmp(), test())        
+        self.assertEqual(tmp(), test(TestClass))        
 
     def test_static_method_pickle(self):        
         self.serializer = Creator.create_serializer('pickle')  
@@ -267,8 +274,7 @@ class TestPacker(unittest.TestCase):
         self.serializer.dump(dct, 'test.pickle')
         test_dict = self.deserializer.load('test.pickle')        
         self.assertEqual(dct, test_dict)        
-
-
+    
     def test_dict_toml(self):        
         self.serializer = Creator.create_serializer('toml')
         self.deserializer = Creator.create_deserializer('toml')
@@ -404,11 +410,5 @@ class TestPacker(unittest.TestCase):
         data = self.serializer.dumps(TestClass)
         self.assertEqual(self.deserializer.loads(data).kkk, TestClass.kkk)        
         
-    # def test_object_yaml(self):
-    #     self.serializer = Creator.create_serializer('yaml')        
-    #     self.deserializer = Creator.create_deserializer('yaml')
-    #     data = self.serializer.dumps(self.obj)
-    #     self.assertEqual(self.deserializer.loads(data).num, self.obj.num)        
-    
 if __name__ == "__main__":
     unittest.main()
