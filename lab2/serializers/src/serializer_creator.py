@@ -1,7 +1,9 @@
 from serializers.src.json_serializer import Encoder as json_encoder, Decoder as json_decoder
 from serializers.src.toml_serializer import Encoder as toml_encoder, Decoder as toml_decoder
 from serializers.src.yaml_serializer import Encoder as yaml_encoder, Decoder as yaml_decoder
-from serializers.src.pickle_serializer import Encoder as pickle_encoder, Decoder as pickle_decoder
+
+from serializers.src.pickle_serializer import Encoder as pickle_encoder
+from serializers.src.pickle_serializer import Decoder as pickle_decoder
 
 class Creator(object):
     @staticmethod
