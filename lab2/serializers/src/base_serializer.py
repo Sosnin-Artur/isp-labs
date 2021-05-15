@@ -24,9 +24,8 @@ class BaseSerializer:
         for attr in dir(obj):  
             if not attr.startswith('__'):
                 attr_value = getattr(obj, attr)
-                if callable(attr_value):
-                    if (hasattr(attr_value, '__code__')):
-                        res[attr] = self.dumps_function(attr_value)                    
+                if callable(attr_value):                    
+                    res[attr] = self.dumps_function(attr_value)                    
                 elif ('__main__' in str(attr_value.__class__)): 
                     res[attr] = self.dumps_object(attr_value)
                 else:
@@ -52,12 +51,12 @@ class BaseSerializer:
         return res
 
     def dumps_function(self, obj):     
-        if hasattr(obj, '__code__'):
-            members = inspect.getmembers(obj.__code__)
+        if hasattr(obj, '__code__'):            
+            members = dir(obj.__code__)
             func_dict = {'type': 'func'}
             for item in members:
-                if item[0].startswith('co_'):
-                    func_dict[item[0]] = item[1]
+                if item.startswith('co_'):
+                    func_dict[item] = getattr(obj.__code__, item)
             func_dict['co_code'] = list(func_dict["co_code"])
             func_dict['co_lnotab'] = list(func_dict["co_lnotab"])
                     
@@ -73,7 +72,7 @@ class BaseDeserializer:
         pass
     
     def dict_to_function(self, dct):
-        function_globals = globals()                
+        function_globals = globals()      
         code = types.CodeType(dct['co_argcount'],
                     dct['co_posonlyargcount'],
                     dct['co_kwonlyargcount'],
@@ -98,7 +97,7 @@ class BaseDeserializer:
 
     def dict_to_object(self, dct):                          
         klass = self.dict_to_class(dct['class'])        
-        init_args = inspect.getfullargspec(klass).args        
+        init_args = inspect.getargspec(klass).args        
         args = {}
         for arg in init_args:
             if arg in dct:

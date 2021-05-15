@@ -23,14 +23,9 @@ def get_paths():
                        help = "yaml serialization")
     
     args  =  vars(parser.parse_args())
-    format_, file_  =  tuple(*{arg: value for arg, value
-                             in args.items() if value}.items())
-    if format_ == 'config':
-        config = configparser.ConfigParser()
-        config.read(file_[0])
-        return config['FORMAT']['serializer'], [config['FILE']['name']]
-    else:
-        return format_, file_
+    format_, file_  =  {arg: value for arg, value
+                            in args.items() if value}.items()    
+    return format_, file_
 
 def main():    
     format_, files = get_paths()    

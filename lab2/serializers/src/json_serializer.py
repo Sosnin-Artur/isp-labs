@@ -22,7 +22,6 @@ class Encoder(BaseSerializer):
         self.dispatch_table[tuple] = self.dumps_list
         self.dispatch_table[dict] = self.dumps_dict    
                         
-
     def dumps(self, obj, nesting_lvl=0):                
         t = type(obj)                    
         if t in self.dispatch_table:
@@ -154,9 +153,8 @@ class Scanner:
             return True, ind + 4
         elif dict_str[ind:ind + 5] == 'false':
             return False, ind + 5
-        
-        match_number = NUMBER_RE.match
-        m = match_number(dict_str, ind)
+                
+        m = NUMBER_RE.match(dict_str, ind)
         if m is not None:
             integer, frac, exp = m.groups()
             if frac or exp:
@@ -179,8 +177,7 @@ class Scanner:
         return dict_str[prev : ind], ind + 1                
 
     def parse_object(self, dict_str, ind, _w=WHITESPACE.match, _ws=WHITESPACE_STR):        
-        pairs = []
-        pairs_append = pairs.append        
+        pairs = []              
         nextchar = dict_str[ind]        
         if nextchar != '"':
             if nextchar in _ws:
@@ -203,7 +200,7 @@ class Scanner:
                 raise IndexError(ind)
             
             value, ind = self.scan(dict_str, ind)
-            pairs_append((key, value))            
+            pairs.append((key, value))            
             nextchar = dict_str[ind]
             if nextchar in _ws:
                 ind = _w(dict_str, ind + 1).end()
@@ -226,11 +223,10 @@ class Scanner:
             ind = _w(dict_str, ind + 1).end()
             nextchar = dict_str[ind]        
         if nextchar == ']':
-            return values, ind + 1
-        _append = values.append
+            return values, ind + 1        
         while True:            
             value, ind = self.scan(dict_str, ind)            
-            _append(value)
+            values.append(value)
             nextchar = dict_str[ind]
             if nextchar in _ws:
                 ind = _w(dict_str, ind + 1).end()
@@ -243,7 +239,6 @@ class Scanner:
                 if dict_str[ind] in _ws:
                     ind = _w(dict_str, ind + 1).end()
         
-
         return values, ind
 
 class Decoder(BaseDeserializer):                
