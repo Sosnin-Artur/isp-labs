@@ -10,7 +10,7 @@ setup(
     test_suite='unit_tests',
     entry_points={
         'console_scripts': [
-            "serializers = core:main",            
+            "serializers = utilit:main",            
         ]
     }
 )
