@@ -5,10 +5,19 @@ class Profile(models.Model):
         verbose_name='id of user',
         unique=True,
     )
+    
     name = models.TextField(
         verbose_name = "username",
+    )       
+
+    location = models.TextField(
+        verbose_name = "username",
+    )       
+
+    bio = models.TextField(
+        verbose_name = "bio",
     )
-    
+
     def __str__(self):
         return f'(selfexterna_id) {self.name}'
     
