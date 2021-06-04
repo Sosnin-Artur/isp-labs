@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} Настройки аккаунта {% endblock %}
+
+{% block style %}
+<link href="{% static 'css/posts/edit_post.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block main %}
+{% include 'menu.html' %}
+<div class="container-fluid">
+ <div class="row justify-content-center">
+   <div class="main col-12 col-sm-12 col-md-10 col-lg-8 col-xl-6 ">
+     <form action="{% url 'posts:edit_post' post.id %}" method="post" enctype="multipart/form-data" class="mt-3 ml-3">
+       {% csrf_token %}
+       {% for field in form %}
+        <div class="form-group">
+         {{ field.label_tag}} {{field}}
+         <small class="text-danger">{{ field.errors }}</small>
+        </div>
+       {% endfor %}
+       <button type="submit" name="button" class="btn btn-block btn-primary">Сохранить</button>
+     </form>
+     <hr>
+     <a href="{% url 'account:user_account' %}" class="btn btn-danger float-right">Отмена</a>
+   </div>
+   </div>
+ </div>
+
+{% endblock %}
