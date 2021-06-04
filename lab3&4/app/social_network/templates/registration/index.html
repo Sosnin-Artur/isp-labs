@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %} HOME {% endblock %}
+
+{% block main %}
+{% include 'menu.html' %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-12 col-md-8 sidenav pt-1">
+      <div class="bd-example">
+          <div class="carousel-inner" role="listbox">
+            <div class="carousel-item active">
+              <img class="d-block w-100 rounded" src="{{MEDIA_URL}}static/image/index.jpg" alt="First slide">
+              <div class="carousel-caption d-none d-md-block text-shadow font-weight-bolder">
+                <h1>ОООО! Кто это пожаловал! Мы ждали тебя</h1>
+                <p>Ну же присаживайся!</p>
+                <a href="{% url 'registration:login' %}">Войди</a> или
+                <a href="{% url 'registration:register' %}">Зарегистрируйся</a>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
