@@ -1,0 +1,51 @@
+{% extends  'base.html' %}
+{% load static %}
+{% block style %}
+<link href="{% static 'css/registration/reg.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block title %} Регистрация {% endblock %}
+
+{% block main %}
+{% include 'menu.html' %}
+<div  class="container-fluid">
+    <div  class="row justify-content-center" style="margin:10px">
+<div class="col-12 col-sm-12 col-md-7 col-lg-5 col-xl-3">
+  <div class="card">
+    <div class="card-body">
+      <h4 class="card-title">Регистрация</h4>
+      <form method="POST" action="{% url 'registration:register' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <table class="w-100">
+          {% for field in form %}
+            <tr>
+              <td height="40" width="35%">{{ field.label_tag }}</td>
+              <td height="40">
+                <div class="block">
+                  <div class="hover">{{ field }}</div>
+                  {% if field.help_text %}
+                    <span class="hidden">
+                      {{ field.help_text|linebreaks }}
+                    </span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <small class="text-danger">{{ field.errors }}</small>
+              </td>
+            </tr>
+          {% endfor %}
+        </table>
+        <button type="submit" class="btn btn-primary btn-block" name='register'>Зарегистрироваться</button>
+      </form>
+      <hr>
+      <a href="{% url 'registration:login' %}" class="btn btn-primary btn-sm btn-block">Войти</a>
+      <a href="{% url 'registration:index' %}" class="btn btn-primary btn-sm btn-block">На главную</a>
+    </div>
+  </div>
+</div>  </div>
+</div>
+{% endblock %}
