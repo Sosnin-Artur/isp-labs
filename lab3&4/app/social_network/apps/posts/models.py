@@ -17,7 +17,7 @@ class Post(models.Model):
                                         blank=True)
 
     def __str__(self):
-        return str(self.author)
+        return str(self.post_title)
 
     class Meta:
         verbose_name = 'Пост'
