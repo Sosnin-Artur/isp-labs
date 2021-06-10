@@ -1,45 +1,21 @@
-FROM python:3.9.1 as builder
+FROM python:3.8.3-alpine
 
-# set project
-WORKDIR /usr/src/app
-COPY ./requirements.txt .
+WORKDIR /usr/src/finalblog
 
-# set env
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install dependencies
 RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev \
-    && pip wheel --no-cache-dir --no-deps --wheel-dir  \
-    /usr/src/app/wheels -r requirements.txt
+    && apk add postgresql-dev gcc python3-dev musl-dev
 
+RUN apk add tiff-dev jpeg-dev openjpeg-dev zlib-dev freetype-dev lcms2-dev \
+    libwebp-dev tcl-dev tk-dev harfbuzz-dev fribidi-dev libimagequant-dev \
+    libxcb-dev libpng-dev
 
-FROM python:3.9.1
+RUN pip3 install --upgrade pip
+COPY ./requirements.txt .
+RUN pip3 install -U -r requirements.txt
+COPY ./entrypoint.sh .
 
-#set env
-ENV APP_HOME=/home/app/web
+COPY . .
 
-# create app user dir
-RUN mkdir -p /home/app \
-    && mkdir ${APP_HOME} \
-    && mkdir ${APP_HOME}/staticfiles \
-    && addgroup -S app  \
-    && adduser -S app -G app
-
-#set project
-WORKDIR ${APP_HOME}
-COPY . ${APP_HOME}
-
-# install dependencies
-COPY --from=builder /usr/src/app/wheels /wheels
-RUN apk update \
-    && apk add libpq \
-    && pip install --no-cache /wheels/*
-
-# set user
-RUN chown -R app:app ${APP_HOME}
-USER app
-
-# run entrypoint.sh
-ENTRYPOINT ["/home/app/web/entrypoint.sh"]

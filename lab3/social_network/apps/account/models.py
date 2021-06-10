@@ -8,48 +8,55 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 
+import logging, asyncio
+logger = logging.getLogger(__name__)
+
 class Profile(models.Model):
     GENDER_CHOICE = (
-    ("M", "М"),
-    ("F", "Ж"),
-    (None, "-")
+        ("M", "M"),
+        ("F", "F"),
+        (None, "-"),
     )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    avatar = models.ImageField('Аватар', blank=True, upload_to = 'images/avatar/')
-    gender =  models.CharField('Пол', max_length=1,
+    avatar = models.ImageField('avatar', blank=True, upload_to = 'images/avatar/')
+    gender =  models.CharField('gender', max_length=1,
                   choices=GENDER_CHOICE,
                   blank=True)
-    city = models.CharField('Город', max_length=100, blank=True)    
+    city = models.CharField('city', max_length=100, blank=True)    
 
-    birth_date = models.DateField('Дата рождения', null=True, blank=True)
+    birth_date = models.DateField('birthday', null=True, blank=True)
     
     def __str__(self):
         return str(self.user)
 
     class Meta:
-        verbose_name = 'Профиль'
-        verbose_name_plural = 'Профили'
+        verbose_name = 'profile'
+        verbose_name_plural = 'profile'
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
+        logger.info('cteate user')
         Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
+    logger.info('save user')
     instance.profile.save()
 
 
 class Status(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    online = models.DateTimeField('Был в онлайне', null=True, blank=True)
+    online = models.DateTimeField('was online', null=True, blank=True)
 
     def __str__(self):
         return str(self.user)
 
     def get_online_status(self):
+
+        logger.info('get online status')
         status = ''
         timezone_delta = timedelta(hours=3, minutes=0)
         online_status_true = timedelta(minutes=5)
@@ -57,44 +64,44 @@ class Status(models.Model):
 
         if self.user.profile.gender == 'F':
             if user_online.date() == (datetime.now() - timedelta(days=1)).date():
-                status = 'Была онлайн вчера в ' + user_online.time().strftime("%H:%M")
+                status = 'was online ' + user_online.time().strftime("%H:%M")
             elif timezone.now() - self.online < online_status_true:
-                status = 'Онлайн'
+                status = 'online'
             elif user_online.date() == datetime.now().date():
-                status = 'Была онлайн сегодня в ' + user_online.time().strftime("%H:%M")
+                status = 'was online ' + user_online.time().strftime("%H:%M")
             elif user_online.date().year == datetime.now().date().year:
-                status = 'Была онлайн ' + user_online.date().strftime("%d.%m") + ' в ' + user_online.time().strftime("%H:%M")
+                status = 'was online' + user_online.date().strftime("%d.%m") + ' in ' + user_online.time().strftime("%H:%M")
             else:
-                status = 'Была онлайн ' + user_online.date().strftime("%d.%m.%Y") + ' в ' + user_online.time().strftime("%H:%M")
+                status = 'was online ' + user_online.date().strftime("%d.%m.%Y") + ' in ' + user_online.time().strftime("%H:%M")
         else:
             if user_online.date() == (datetime.now() - timedelta(days=1)).date():
-                status = 'Был онлайн вчера в ' + user_online.time().strftime("%H:%M")
+                status = 'was online ' + user_online.time().strftime("%H:%M")
             elif timezone.now() - self.online < online_status_true:
-                status = 'Онлайн'
+                status = 'was online'
             elif user_online.date() == datetime.now().date():
-                status = 'Был онлайн сегодня в ' + user_online.time().strftime("%H:%M")
+                status = 'was online' + user_online.time().strftime("%H:%M")
             elif user_online.date().year == datetime.now().date().year:
-                status = 'Был онлайн ' + user_online.date().strftime("%d.%m") + ' в ' + user_online.time().strftime("%H:%M")
+                status = 'was online' + user_online.date().strftime("%d.%m") + ' in ' + user_online.time().strftime("%H:%M")
             else:
-                status = 'Был онлайн ' + user_online.date().strftime("%d.%m.%Y") + ' в ' + user_online.time().strftime("%H:%M")
+                status = 'was online' + user_online.date().strftime("%d.%m.%Y") + ' in ' + user_online.time().strftime("%H:%M")
         return status
 
     class Meta:
-        verbose_name = 'Статус'
-        verbose_name_plural = 'Статусы'
+        verbose_name = 'Status'
+        verbose_name_plural = 'Statuses'
 
 
 class Friend(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     users_friend = models.ForeignKey(User, related_name = 'users_friend', on_delete = models.CASCADE)
-    confirmed = models.BooleanField('Подтверждено', default=False)
+    confirmed = models.BooleanField('assept', default=False)
 
     def __str__(self):
         return str(self.user)
 
     class Meta:
-        verbose_name = 'Друг'
-        verbose_name_plural = 'Друзья'
+        verbose_name = 'Friend'
+        verbose_name_plural = 'Friends'
 
 
 class Follower(models.Model):
@@ -105,5 +112,5 @@ class Follower(models.Model):
         return str(self.user)
 
     class Meta:
-        verbose_name = 'Подписчик'
-        verbose_name_plural = 'Подписчики'
+        verbose_name = 'follower'
+        verbose_name_plural = 'followers'
