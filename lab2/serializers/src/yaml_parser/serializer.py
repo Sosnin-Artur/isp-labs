@@ -1,15 +1,8 @@
-
-__all__ = ['Serializer', 'SerializerError']
-
-from .error import YAMLError
 from .events import *
 from .nodes import *
 
-class SerializerError(YAMLError):
-    pass
 
 class Serializer:
-
     ANCHOR_TEMPLATE = 'id%03d'
 
     def __init__(self, encoding=None,
@@ -29,25 +22,22 @@ class Serializer:
             self.emit(StreamStartEvent(encoding=self.use_encoding))
             self.closed = False
         elif self.closed:
-            raise SerializerError("serializer is closed")
+            raise ValueError("serializer is closed")
         else:
-            raise SerializerError("serializer is already opened")
+            raise ValueError("serializer is already opened")
 
     def close(self):
         if self.closed is None:
-            raise SerializerError("serializer is not opened")
+            raise ValueError("serializer is not opened")
         elif not self.closed:
             self.emit(StreamEndEvent())
             self.closed = True
 
-    #def __del__(self):
-    #    self.close()
-
     def serialize(self, node):
         if self.closed is None:
-            raise SerializerError("serializer is not opened")
+            raise ValueError("serializer is not opened")
         elif self.closed:
-            raise SerializerError("serializer is closed")
+            raise ValueError("serializer is closed")
         self.emit(DocumentStartEvent(explicit=self.use_explicit_start,
             version=self.use_version, tags=self.use_tags))
         self.anchor_node(node)

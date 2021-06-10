@@ -275,28 +275,6 @@ class TestPacker(unittest.TestCase):
         test_dict = self.deserializer.load('test.pickle')        
         self.assertEqual(dct, test_dict)        
     
-    def test_dict_toml(self):        
-        self.serializer = Creator.create_serializer('toml')
-        self.deserializer = Creator.create_deserializer('toml')
-        
-        test_dict = self.deserializer.loads(self.serializer.dumps(dct))        
-        self.assertEqual(dct, test_dict)        
-    
-    def test_dict_toml_file(self):        
-        self.serializer = Creator.create_serializer('toml')
-        self.deserializer = Creator.create_deserializer('toml')
-        
-        self.serializer.dump(dct, 'test.toml')
-        test_dict = self.deserializer.load('test.toml')        
-        self.assertEqual(dct, test_dict)        
-
-    def test_dict2_toml(self):        
-        self.serializer = Creator.create_serializer('toml')
-        self.deserializer = Creator.create_deserializer('toml')
-        
-        test_dict = self.deserializer.loads(self.serializer.dumps(dct))        
-        self.assertEqual(dct, test_dict)        
-
     def test_string_toml(self):                
         test_string = self.deserializer.loads(self.serializer.dumps(self.obj.str))
         self.assertEqual(self.obj.str, test_string)        
@@ -324,7 +302,7 @@ class TestPacker(unittest.TestCase):
     def test_object_toml(self):
         data = self.serializer.dumps(self.obj)
         self.assertEqual(self.deserializer.loads(data).num, TestClass().num)        
-    
+
     def test_dict_yaml(self):        
         self.serializer = Creator.create_serializer('yaml')
         self.serializer = Creator.create_serializer('yaml', 4)
@@ -333,14 +311,6 @@ class TestPacker(unittest.TestCase):
         test_dict = self.deserializer.loads(self.serializer.dumps(d))        
         self.assertEqual(d, test_dict)        
     
-    def test_dict_yaml_file(self):        
-        self.serializer = Creator.create_serializer('yaml')
-        self.deserializer = Creator.create_deserializer('yaml')
-        
-        self.serializer.dump(dct, 'test.yaml')
-        test_dict = self.deserializer.load('test.yaml')        
-        self.assertEqual(dct, test_dict)        
-
     def test_int_yaml(self):                
         self.serializer = Creator.create_serializer('yaml')        
         self.deserializer = Creator.create_deserializer('yaml')
@@ -409,6 +379,6 @@ class TestPacker(unittest.TestCase):
         self.deserializer = Creator.create_deserializer('yaml')
         data = self.serializer.dumps(TestClass)
         self.assertEqual(self.deserializer.loads(data).kkk, TestClass.kkk)        
-        
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,14 +1,6 @@
-
-__all__ = ['BaseRepresenter', 'SafeRepresenter', 'Representer',
-    'RepresenterError']
-
-from .error import *
 from .nodes import *
 
 import datetime, copyreg, types, base64, collections
-
-class RepresenterError(YAMLError):
-    pass
 
 class BaseRepresenter:
 
@@ -37,11 +29,8 @@ class BaseRepresenter:
             self.alias_key = id(data)
         if self.alias_key is not None:
             if self.alias_key in self.represented_objects:
-                node = self.represented_objects[self.alias_key]
-                #if node is None:
-                #    raise RepresenterError("recursive objects are not allowed: %r" % data)
+                node = self.represented_objects[self.alias_key]                
                 return node
-            #self.represented_objects[alias_key] = None
             self.object_keeper.append(data)
         data_types = type(data).__mro__
         if data_types[0] in self.yaml_representers:
@@ -58,8 +47,6 @@ class BaseRepresenter:
                     node = self.yaml_representers[None](self, data)
                 else:
                     node = ScalarNode(None, str(data))
-        #if alias_key is not None:
-        #    self.represented_objects[alias_key] = node
         return node
 
     @classmethod
@@ -176,32 +163,14 @@ class SafeRepresenter(BaseRepresenter):
         elif data == -self.inf_value:
             value = '-.inf'
         else:
-            value = repr(data).lower()
-            # Note that in some cases `repr(data)` represents a float number
-            # without the decimal parts.  For instance:
-            #   >>> repr(1e17)
-            #   '1e17'
-            # Unfortunately, this is not a valid float representation according
-            # to the definition of the `!!float` tag.  We fix this by adding
-            # '.0' before the 'e' symbol.
+            value = repr(data).lower()            
             if '.' not in value and 'e' in value:
                 value = value.replace('e', '.0e', 1)
         return self.represent_scalar('tag:yaml.org,2002:float', value)
 
-    def represent_list(self, data):
-        #pairs = (len(data) > 0 and isinstance(data, list))
-        #if pairs:
-        #    for item in data:
-        #        if not isinstance(item, tuple) or len(item) != 2:
-        #            pairs = False
-        #            break
-        #if not pairs:
-            return self.represent_sequence('tag:yaml.org,2002:seq', data)
-        #value = []
-        #for item_key, item_value in data:
-        #    value.append(self.represent_mapping(u'tag:yaml.org,2002:map',
-        #        [(item_key, item_value)]))
-        #return SequenceNode(u'tag:yaml.org,2002:pairs', value)
+    def represent_list(self, data):        
+        return self.represent_sequence('tag:yaml.org,2002:seq', data)
+        
 
     def represent_dict(self, data):
         return self.represent_mapping('tag:yaml.org,2002:map', data)
@@ -228,7 +197,7 @@ class SafeRepresenter(BaseRepresenter):
         return self.represent_mapping(tag, state, flow_style=flow_style)
 
     def represent_undefined(self, data):
-        raise RepresenterError("cannot represent an object", data)
+        raise ValueError("cannot represent an object", data)
 
 SafeRepresenter.add_representer(type(None),
         SafeRepresenter.represent_none)
@@ -270,7 +239,6 @@ SafeRepresenter.add_representer(None,
         SafeRepresenter.represent_undefined)
 
 class Representer(SafeRepresenter):
-
     def represent_complex(self, data):
         if data.imag == 0.0:
             data = '%r' % data.real
@@ -293,23 +261,7 @@ class Representer(SafeRepresenter):
         return self.represent_scalar(
                 'tag:yaml.org,2002:python/module:'+data.__name__, '')
 
-    def represent_object(self, data):
-        # We use __reduce__ API to save the data. data.__reduce__ returns
-        # a tuple of length 2-5:
-        #   (function, args, state, listitems, dictitems)
-
-        # For reconstructing, we calls function(*args), then set its state,
-        # listitems, and dictitems if they are not None.
-
-        # A special case is when function.__name__ == '__newobj__'. In this
-        # case we create the object with args[0].__new__(*args).
-
-        # Another special case is when __reduce__ returns a string - we don't
-        # support it.
-
-        # We produce a !!python/object, !!python/object/new or
-        # !!python/object/apply node.
-
+    def represent_object(self, data):        
         cls = type(data)
         if cls in copyreg.dispatch_table:
             reduce = copyreg.dispatch_table[cls](data)
@@ -318,7 +270,7 @@ class Representer(SafeRepresenter):
         elif hasattr(data, '__reduce__'):
             reduce = data.__reduce__()
         else:
-            raise RepresenterError("cannot represent an object", data)
+            raise ValueError("cannot represent an object", data)
         reduce = (list(reduce)+[None]*5)[:5]
         function, args, state, listitems, dictitems = reduce
         args = list(args)
@@ -356,7 +308,6 @@ class Representer(SafeRepresenter):
         return self.represent_mapping(tag+function_name, value)
 
     def represent_ordered_dict(self, data):
-        # Provide uniform representation across different Python versions.
         data_type = type(data)
         tag = 'tag:yaml.org,2002:python/object/apply:%s.%s' \
                 % (data_type.__module__, data_type.__name__)

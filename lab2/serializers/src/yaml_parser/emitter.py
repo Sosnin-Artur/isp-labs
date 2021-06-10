@@ -1,13 +1,3 @@
-
-# Emitter expects events obeying the following grammar:
-# stream ::= STREAM-START document* STREAM-END
-# document ::= DOCUMENT-START node DOCUMENT-END
-# node ::= SCALAR | sequence | mapping
-# sequence ::= SEQUENCE-START node* SEQUENCE-END
-# mapping ::= MAPPING-START (node node)* MAPPING-END
-
-__all__ = ['Emitter', 'EmitterError']
-
 from .error import YAMLError
 from .events import *
 
@@ -37,49 +27,24 @@ class Emitter:
 
     def __init__(self, stream, canonical=None, indent=None, width=None,
             allow_unicode=None, line_break=None):
-
-        # The stream should have the methods `write` and possibly `flush`.
         self.stream = stream
-
-        # Encoding can be overridden by STREAM-START.
         self.encoding = None
-
-        # Emitter is a state machine with a stack of states to handle nested
-        # structures.
         self.states = []
         self.state = self.expect_stream_start
-
-        # Current event and the event queue.
         self.events = []
         self.event = None
-
-        # The current indentation level and the stack of previous indents.
         self.indents = []
         self.indent = None
-
-        # Flow level.
         self.flow_level = 0
-
-        # Contexts.
         self.root_context = False
         self.sequence_context = False
         self.mapping_context = False
-        self.simple_key_context = False
-
-        # Characteristics of the last emitted character:
-        #  - current position.
-        #  - is it a whitespace?
-        #  - is it an indention character
-        #    (indentation space, '-', '?', or ':')?
+        self.simple_key_context = False        
         self.line = 0
         self.column = 0
         self.whitespace = True
         self.indention = True
-
-        # Whether the document requires an explicit document indicator
         self.open_ended = False
-
-        # Formatting details.
         self.canonical = canonical
         self.allow_unicode = allow_unicode
         self.best_indent = 2
@@ -91,20 +56,14 @@ class Emitter:
         self.best_line_break = '\n'
         if line_break in ['\r', '\n', '\r\n']:
             self.best_line_break = line_break
-
-        # Tag prefixes.
         self.tag_prefixes = None
 
-        # Prepared anchor and tag.
         self.prepared_anchor = None
         self.prepared_tag = None
-
-        # Scalar analysis and style.
         self.analysis = None
         self.style = None
 
     def dispose(self):
-        # Reset the state attributes (to clear self-references)
         self.states = []
         self.state = None
 
@@ -114,9 +73,7 @@ class Emitter:
             self.event = self.events.pop(0)
             self.state()
             self.event = None
-
-    # In some cases, we wait for a few next events before emitting.
-
+    
     def need_more_events(self):
         if not self.events:
             return True
@@ -153,10 +110,6 @@ class Emitter:
         elif not indentless:
             self.indent += self.best_indent
 
-    # States.
-
-    # Stream handlers.
-
     def expect_stream_start(self):
         if isinstance(self.event, StreamStartEvent):
             if self.event.encoding and not hasattr(self.stream, 'encoding'):
@@ -169,8 +122,6 @@ class Emitter:
 
     def expect_nothing(self):
         raise EmitterError("expected nothing, but got %s" % self.event)
-
-    # Document handlers.
 
     def expect_first_document_start(self):
         return self.expect_document_start(first=True)
@@ -227,8 +178,6 @@ class Emitter:
         self.states.append(self.expect_document_end)
         self.expect_node(root=True)
 
-    # Node handlers.
-
     def expect_node(self, root=False, sequence=False, mapping=False,
             simple_key=False):
         self.root_context = root
@@ -269,8 +218,6 @@ class Emitter:
         self.indent = self.indents.pop()
         self.state = self.states.pop()
 
-    # Flow sequence handlers.
-
     def expect_flow_sequence(self):
         self.write_indicator('[', True, whitespace=True)
         self.flow_level += 1
@@ -304,8 +251,6 @@ class Emitter:
                 self.write_indent()
             self.states.append(self.expect_flow_sequence_item)
             self.expect_node(sequence=True)
-
-    # Flow mapping handlers.
 
     def expect_flow_mapping(self):
         self.write_indicator('{', True, whitespace=True)
@@ -363,8 +308,6 @@ class Emitter:
         self.states.append(self.expect_flow_mapping_key)
         self.expect_node(mapping=True)
 
-    # Block sequence handlers.
-
     def expect_block_sequence(self):
         indentless = (self.mapping_context and not self.indention)
         self.increase_indent(flow=False, indentless=indentless)
@@ -382,8 +325,6 @@ class Emitter:
             self.write_indicator('-', True, indention=True)
             self.states.append(self.expect_block_sequence_item)
             self.expect_node(sequence=True)
-
-    # Block mapping handlers.
 
     def expect_block_mapping(self):
         self.increase_indent(flow=False)
@@ -416,8 +357,6 @@ class Emitter:
         self.write_indicator(':', True, indention=True)
         self.states.append(self.expect_block_mapping_key)
         self.expect_node(mapping=True)
-
-    # Checkers.
 
     def check_empty_sequence(self):
         return (isinstance(self.event, SequenceStartEvent) and self.events
@@ -453,8 +392,6 @@ class Emitter:
             or (isinstance(self.event, ScalarEvent)
                     and not self.analysis.empty and not self.analysis.multiline)
             or self.check_empty_sequence() or self.check_empty_mapping()))
-
-    # Anchor, Tag, and Scalar processors.
 
     def process_anchor(self, indicator):
         if self.event.anchor is None:
@@ -518,9 +455,6 @@ class Emitter:
         if self.style is None:
             self.style = self.choose_scalar_style()
         split = (not self.simple_key_context)
-        #if self.analysis.multiline and split    \
-        #        and (not self.style or self.style in '\'\"'):
-        #    self.write_indent()
         if self.style == '"':
             self.write_double_quoted(self.analysis.scalar, split)
         elif self.style == '\'':
@@ -533,8 +467,6 @@ class Emitter:
             self.write_plain(self.analysis.scalar, split)
         self.analysis = None
         self.style = None
-
-    # Analyzers.
 
     def prepare_version(self, version):
         major, minor = version

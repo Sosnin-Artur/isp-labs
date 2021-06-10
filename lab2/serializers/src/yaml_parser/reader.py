@@ -1,61 +1,7 @@
-# This module contains abstractions for the input stream. You don't have to
-# looks further, there are no pretty code.
-#
-# We define two classes here.
-#
-#   Mark(source, line, column)
-# It's just a record and its only use is producing nice error messages.
-# Parser does not use it for any other purposes.
-#
-#   Reader(source, data)
-# Reader determines the encoding of `data` and converts it to unicode.
-# Reader provides the following methods and attributes:
-#   reader.peek(length=1) - return the next `length` characters
-#   reader.forward(length=1) - move the current position to `length` characters.
-#   reader.index - the number of the current character.
-#   reader.line, stream.column - the line and the column of the current character.
-
-__all__ = ['Reader', 'ReaderError']
-
-from .error import YAMLError, Mark
-
 import codecs, re
-
-class ReaderError(YAMLError):
-
-    def __init__(self, name, position, character, encoding, reason):
-        self.name = name
-        self.character = character
-        self.position = position
-        self.encoding = encoding
-        self.reason = reason
-
-    def __str__(self):
-        if isinstance(self.character, bytes):
-            return "'%s' codec can't decode byte #x%02x: %s\n"  \
-                    "  in \"%s\", position %d"    \
-                    % (self.encoding, ord(self.character), self.reason,
-                            self.name, self.position)
-        else:
-            return "unacceptable character #x%04x: %s\n"    \
-                    "  in \"%s\", position %d"    \
-                    % (self.character, self.reason,
-                            self.name, self.position)
+from .error import *
 
 class Reader(object):
-    # Reader:
-    # - determines the data encoding and converts it to a unicode string,
-    # - checks if characters are in allowed range,
-    # - adds '\0' to the end.
-
-    # Reader accepts
-    #  - a `bytes` object,
-    #  - a `str` object,
-    #  - a file-like object with its `read` method returning `str`,
-    #  - a file-like object with its `read` method returning `unicode`.
-
-    # Yeah, it's ugly and slow.
-
     def __init__(self, stream):
         self.name = None
         self.stream = None
@@ -140,7 +86,7 @@ class Reader(object):
         if match:
             character = match.group()
             position = self.index+(len(self.buffer)-self.pointer)+match.start()
-            raise ReaderError(self.name, position, ord(character),
+            raise ValueError(self.name, position, ord(character),
                     'unicode', "special characters are not allowed")
 
     def update(self, length):
@@ -161,7 +107,7 @@ class Reader(object):
                         position = self.stream_pointer-len(self.raw_buffer)+exc.start
                     else:
                         position = exc.start
-                    raise ReaderError(self.name, position, character,
+                    raise ValueError(self.name, position, character,
                             exc.encoding, exc.reason)
             else:
                 data = self.raw_buffer

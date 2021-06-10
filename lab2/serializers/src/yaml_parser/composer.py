@@ -1,9 +1,5 @@
-from .error import MarkedYAMLError
 from .events import *
 from .nodes import *
-
-class ComposerError(MarkedYAMLError):
-    pass
 
 class Composer:
 
@@ -28,7 +24,7 @@ class Composer:
         
         if not self.check_event(StreamEndEvent):
             event = self.get_event()
-            raise ComposerError("expected a single document in the stream",
+            raise ValueError("expected a single document in the stream",
                     document.start_mark, "but found another document",
                     event.start_mark)
         
@@ -51,14 +47,14 @@ class Composer:
             event = self.get_event()
             anchor = event.anchor
             if anchor not in self.anchors:
-                raise ComposerError(None, None, "found undefined alias %r"
+                raise ValueError(None, None, "found undefined alias %r"
                         % anchor, event.start_mark)
             return self.anchors[anchor]
         event = self.peek_event()
         anchor = event.anchor
         if anchor is not None:
             if anchor in self.anchors:
-                raise ComposerError("found duplicate anchor %r; first occurrence"
+                raise ValueError("found duplicate anchor %r; first occurrence"
                         % anchor, self.anchors[anchor].start_mark,
                         "second occurrence", event.start_mark)
         self.descend_resolver(parent, index)

@@ -3,13 +3,10 @@ from .nodes import *
 
 import collections.abc, datetime, base64, binascii, re, sys, types
 
-class ConstructorError(MarkedYAMLError):
-    pass
-
 class BaseConstructor:
 
-    yaml_constructors = {}
-    yaml_multi_constructors = {}
+    yaml_Constructors = {}
+    yaml_multi_Constructors = {}
 
     def __init__(self):
         self.constructed_objects = {}
@@ -18,24 +15,18 @@ class BaseConstructor:
         self.deep_construct = False
 
     def check_data(self):
-        # If there are more documents available?
         return self.check_node()
 
-    def check_state_key(self, key):
-        """Block special attributes/methods from being set in a newly created
-        object, to prevent user-controlled methods from being called during
-        deserialization"""
+    def check_state_key(self, key):        
         if self.get_state_keys_blacklist_regexp().match(key):
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                 "blacklisted key '%s' in instance state found" % (key,), None)
 
     def get_data(self):
-        # Construct and return the next document.
         if self.check_node():
             return self.construct_document(self.get_node())
 
     def get_single_data(self):
-        # Ensure that the stream contains a single document and construct it.
         node = self.get_single_node()
         if node is not None:
             return self.construct_document(node)
@@ -61,35 +52,35 @@ class BaseConstructor:
             old_deep = self.deep_construct
             self.deep_construct = True
         if node in self.recursive_objects:
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "found unconstructable recursive node", node.start_mark)
         self.recursive_objects[node] = None
-        constructor = None
+        Constructor = None
         tag_suffix = None
-        if node.tag in self.yaml_constructors:
-            constructor = self.yaml_constructors[node.tag]
+        if node.tag in self.yaml_Constructors:
+            Constructor = self.yaml_Constructors[node.tag]
         else:
-            for tag_prefix in self.yaml_multi_constructors:
+            for tag_prefix in self.yaml_multi_Constructors:
                 if tag_prefix is not None and node.tag.startswith(tag_prefix):
                     tag_suffix = node.tag[len(tag_prefix):]
-                    constructor = self.yaml_multi_constructors[tag_prefix]
+                    Constructor = self.yaml_multi_Constructors[tag_prefix]
                     break
             else:
-                if None in self.yaml_multi_constructors:
+                if None in self.yaml_multi_Constructors:
                     tag_suffix = node.tag
-                    constructor = self.yaml_multi_constructors[None]
-                elif None in self.yaml_constructors:
-                    constructor = self.yaml_constructors[None]
+                    Constructor = self.yaml_multi_Constructors[None]
+                elif None in self.yaml_Constructors:
+                    Constructor = self.yaml_Constructors[None]
                 elif isinstance(node, ScalarNode):
-                    constructor = self.__class__.construct_scalar
+                    Constructor = self.__class__.construct_scalar
                 elif isinstance(node, SequenceNode):
-                    constructor = self.__class__.construct_sequence
+                    Constructor = self.__class__.construct_sequence
                 elif isinstance(node, MappingNode):
-                    constructor = self.__class__.construct_mapping
+                    Constructor = self.__class__.construct_mapping
         if tag_suffix is None:
-            data = constructor(self, node)
+            data = Constructor(self, node)
         else:
-            data = constructor(self, tag_suffix, node)
+            data = Constructor(self, tag_suffix, node)
         if isinstance(data, types.GeneratorType):
             generator = data
             data = next(generator)
@@ -106,14 +97,14 @@ class BaseConstructor:
 
     def construct_scalar(self, node):
         if not isinstance(node, ScalarNode):
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "expected a scalar node, but found %s" % node.id,
                     node.start_mark)
         return node.value
 
     def construct_sequence(self, node, deep=False):
         if not isinstance(node, SequenceNode):
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "expected a sequence node, but found %s" % node.id,
                     node.start_mark)
         return [self.construct_object(child, deep=deep)
@@ -121,14 +112,14 @@ class BaseConstructor:
 
     def construct_mapping(self, node, deep=False):
         if not isinstance(node, MappingNode):
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "expected a mapping node, but found %s" % node.id,
                     node.start_mark)
         mapping = {}
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
             if not isinstance(key, collections.abc.Hashable):
-                raise ConstructorError("while constructing a mapping", node.start_mark,
+                raise ValueError("while constructing a mapping", node.start_mark,
                         "found unhashable key", key_node.start_mark)
             value = self.construct_object(value_node, deep=deep)
             mapping[key] = value
@@ -136,7 +127,7 @@ class BaseConstructor:
 
     def construct_pairs(self, node, deep=False):
         if not isinstance(node, MappingNode):
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "expected a mapping node, but found %s" % node.id,
                     node.start_mark)
         pairs = []
@@ -147,18 +138,18 @@ class BaseConstructor:
         return pairs
 
     @classmethod
-    def add_constructor(cls, tag, constructor):
-        if not 'yaml_constructors' in cls.__dict__:
-            cls.yaml_constructors = cls.yaml_constructors.copy()
-        cls.yaml_constructors[tag] = constructor
+    def add_Constructor(cls, tag, Constructor):
+        if not 'yaml_Constructors' in cls.__dict__:
+            cls.yaml_Constructors = cls.yaml_Constructors.copy()
+        cls.yaml_Constructors[tag] = Constructor
 
     @classmethod
-    def add_multi_constructor(cls, tag_prefix, multi_constructor):
-        if not 'yaml_multi_constructors' in cls.__dict__:
-            cls.yaml_multi_constructors = cls.yaml_multi_constructors.copy()
-        cls.yaml_multi_constructors[tag_prefix] = multi_constructor
+    def add_multi_Constructor(cls, tag_prefix, multi_Constructor):
+        if not 'yaml_multi_Constructors' in cls.__dict__:
+            cls.yaml_multi_Constructors = cls.yaml_multi_Constructors.copy()
+        cls.yaml_multi_Constructors[tag_prefix] = multi_Constructor
 
-class SafeConstructor(BaseConstructor):
+class Constructor(BaseConstructor):
 
     def construct_scalar(self, node):
         if isinstance(node, MappingNode):
@@ -181,7 +172,7 @@ class SafeConstructor(BaseConstructor):
                     submerge = []
                     for subnode in value_node.value:
                         if not isinstance(subnode, MappingNode):
-                            raise ConstructorError("while constructing a mapping",
+                            raise ValueError("while constructing a mapping",
                                     node.start_mark,
                                     "expected a mapping for merging, but found %s"
                                     % subnode.id, subnode.start_mark)
@@ -191,7 +182,7 @@ class SafeConstructor(BaseConstructor):
                     for value in submerge:
                         merge.extend(value)
                 else:
-                    raise ConstructorError("while constructing a mapping", node.start_mark,
+                    raise ValueError("while constructing a mapping", node.start_mark,
                             "expected a mapping or list of mappings for merging, but found %s"
                             % value_node.id, value_node.start_mark)
             elif key_node.tag == 'tag:yaml.org,2002:value':
@@ -255,7 +246,7 @@ class SafeConstructor(BaseConstructor):
     inf_value = 1e300
     while inf_value != inf_value*inf_value:
         inf_value *= inf_value
-    nan_value = -inf_value/inf_value   # Trying to make a quiet NaN (like C99).
+    nan_value = -inf_value/inf_value   
 
     def construct_yaml_float(self, node):
         value = self.construct_scalar(node)
@@ -285,7 +276,7 @@ class SafeConstructor(BaseConstructor):
         try:
             value = self.construct_scalar(node).encode('ascii')
         except UnicodeEncodeError as exc:
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "failed to convert base64 data into ascii: %s" % exc,
                     node.start_mark)
         try:
@@ -294,7 +285,7 @@ class SafeConstructor(BaseConstructor):
             else:
                 return base64.decodestring(value)
         except binascii.Error as exc:
-            raise ConstructorError(None, None,
+            raise ValueError(None, None,
                     "failed to decode base64 data: %s" % exc, node.start_mark)
 
     timestamp_regexp = re.compile(
@@ -340,21 +331,19 @@ class SafeConstructor(BaseConstructor):
         return datetime.datetime(year, month, day, hour, minute, second, fraction,
                                  tzinfo=tzinfo)
 
-    def construct_yaml_omap(self, node):
-        # Note: we do not check for duplicate keys, because it's too
-        # CPU-expensive.
+    def construct_yaml_omap(self, node):        
         omap = []
         yield omap
         if not isinstance(node, SequenceNode):
-            raise ConstructorError("while constructing an ordered map", node.start_mark,
+            raise ValueError("while constructing an ordered map", node.start_mark,
                     "expected a sequence, but found %s" % node.id, node.start_mark)
         for subnode in node.value:
             if not isinstance(subnode, MappingNode):
-                raise ConstructorError("while constructing an ordered map", node.start_mark,
+                raise ValueError("while constructing an ordered map", node.start_mark,
                         "expected a mapping of length 1, but found %s" % subnode.id,
                         subnode.start_mark)
             if len(subnode.value) != 1:
-                raise ConstructorError("while constructing an ordered map", node.start_mark,
+                raise ValueError("while constructing an ordered map", node.start_mark,
                         "expected a single mapping item, but found %d items" % len(subnode.value),
                         subnode.start_mark)
             key_node, value_node = subnode.value[0]
@@ -363,19 +352,18 @@ class SafeConstructor(BaseConstructor):
             omap.append((key, value))
 
     def construct_yaml_pairs(self, node):
-        # Note: the same code as `construct_yaml_omap`.
         pairs = []
         yield pairs
         if not isinstance(node, SequenceNode):
-            raise ConstructorError("while constructing pairs", node.start_mark,
+            raise ValueError("while constructing pairs", node.start_mark,
                     "expected a sequence, but found %s" % node.id, node.start_mark)
         for subnode in node.value:
             if not isinstance(subnode, MappingNode):
-                raise ConstructorError("while constructing pairs", node.start_mark,
+                raise ValueError("while constructing pairs", node.start_mark,
                         "expected a mapping of length 1, but found %s" % subnode.id,
                         subnode.start_mark)
             if len(subnode.value) != 1:
-                raise ConstructorError("while constructing pairs", node.start_mark,
+                raise ValueError("while constructing pairs", node.start_mark,
                         "expected a single mapping item, but found %d items" % len(subnode.value),
                         subnode.start_mark)
             key_node, value_node = subnode.value[0]
@@ -414,325 +402,64 @@ class SafeConstructor(BaseConstructor):
             data.__dict__.update(state)
 
     def construct_undefined(self, node):
-        raise ConstructorError(None, None,
-                "could not determine a constructor for the tag %r" % node.tag,
+        raise ValueError(None, None,
+                "could not determine a Constructor for the tag %r" % node.tag,
                 node.start_mark)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:null',
-        SafeConstructor.construct_yaml_null)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:bool',
-        SafeConstructor.construct_yaml_bool)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:int',
-        SafeConstructor.construct_yaml_int)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:float',
-        SafeConstructor.construct_yaml_float)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:binary',
-        SafeConstructor.construct_yaml_binary)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:timestamp',
-        SafeConstructor.construct_yaml_timestamp)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:omap',
-        SafeConstructor.construct_yaml_omap)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:pairs',
-        SafeConstructor.construct_yaml_pairs)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:set',
-        SafeConstructor.construct_yaml_set)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:str',
-        SafeConstructor.construct_yaml_str)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:seq',
-        SafeConstructor.construct_yaml_seq)
-
-SafeConstructor.add_constructor(
-        'tag:yaml.org,2002:map',
-        SafeConstructor.construct_yaml_map)
-
-SafeConstructor.add_constructor(None,
-        SafeConstructor.construct_undefined)
-
-class FullConstructor(SafeConstructor):
-    # 'extend' is blacklisted because it is used by
-    # construct_python_object_apply to add `listitems` to a newly generate
-    # python instance
-    def get_state_keys_blacklist(self):
-        return ['^extend$', '^__.*__$']
-
-    def get_state_keys_blacklist_regexp(self):
-        if not hasattr(self, 'state_keys_blacklist_regexp'):
-            self.state_keys_blacklist_regexp = re.compile('(' + '|'.join(self.get_state_keys_blacklist()) + ')')
-        return self.state_keys_blacklist_regexp
-
-    def construct_python_str(self, node):
-        return self.construct_scalar(node)
-
-    def construct_python_unicode(self, node):
-        return self.construct_scalar(node)
-
-    def construct_python_bytes(self, node):
-        try:
-            value = self.construct_scalar(node).encode('ascii')
-        except UnicodeEncodeError as exc:
-            raise ConstructorError(None, None,
-                    "failed to convert base64 data into ascii: %s" % exc,
-                    node.start_mark)
-        try:
-            if hasattr(base64, 'decodebytes'):
-                return base64.decodebytes(value)
-            else:
-                return base64.decodestring(value)
-        except binascii.Error as exc:
-            raise ConstructorError(None, None,
-                    "failed to decode base64 data: %s" % exc, node.start_mark)
-
-    def construct_python_long(self, node):
-        return self.construct_yaml_int(node)
-
-    def construct_python_complex(self, node):
-       return complex(self.construct_scalar(node))
-
+    
     def construct_python_tuple(self, node):
         return tuple(self.construct_sequence(node))
 
-    def find_python_module(self, name, mark, unsafe=False):
-        if not name:
-            raise ConstructorError("while constructing a Python module", mark,
-                    "expected non-empty name appended to the tag", mark)
-        if unsafe:
-            try:
-                __import__(name)
-            except ImportError as exc:
-                raise ConstructorError("while constructing a Python module", mark,
-                        "cannot find module %r (%s)" % (name, exc), mark)
-        if name not in sys.modules:
-            raise ConstructorError("while constructing a Python module", mark,
-                    "module %r is not imported" % name, mark)
-        return sys.modules[name]
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:null',
+        Constructor.construct_yaml_null)
 
-    def find_python_name(self, name, mark, unsafe=False):
-        if not name:
-            raise ConstructorError("while constructing a Python object", mark,
-                    "expected non-empty name appended to the tag", mark)
-        if '.' in name:
-            module_name, object_name = name.rsplit('.', 1)
-        else:
-            module_name = 'builtins'
-            object_name = name
-        if unsafe:
-            try:
-                __import__(module_name)
-            except ImportError as exc:
-                raise ConstructorError("while constructing a Python object", mark,
-                        "cannot find module %r (%s)" % (module_name, exc), mark)
-        if module_name not in sys.modules:
-            raise ConstructorError("while constructing a Python object", mark,
-                    "module %r is not imported" % module_name, mark)
-        module = sys.modules[module_name]
-        if not hasattr(module, object_name):
-            raise ConstructorError("while constructing a Python object", mark,
-                    "cannot find %r in the module %r"
-                    % (object_name, module.__name__), mark)
-        return getattr(module, object_name)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:bool',
+        Constructor.construct_yaml_bool)
 
-    def construct_python_name(self, suffix, node):
-        value = self.construct_scalar(node)
-        if value:
-            raise ConstructorError("while constructing a Python name", node.start_mark,
-                    "expected the empty value, but found %r" % value, node.start_mark)
-        return self.find_python_name(suffix, node.start_mark)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:int',
+        Constructor.construct_yaml_int)
 
-    def construct_python_module(self, suffix, node):
-        value = self.construct_scalar(node)
-        if value:
-            raise ConstructorError("while constructing a Python module", node.start_mark,
-                    "expected the empty value, but found %r" % value, node.start_mark)
-        return self.find_python_module(suffix, node.start_mark)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:float',
+        Constructor.construct_yaml_float)
 
-    def make_python_instance(self, suffix, node,
-            args=None, kwds=None, newobj=False, unsafe=False):
-        if not args:
-            args = []
-        if not kwds:
-            kwds = {}
-        cls = self.find_python_name(suffix, node.start_mark)
-        if not (unsafe or isinstance(cls, type)):
-            raise ConstructorError("while constructing a Python instance", node.start_mark,
-                    "expected a class, but found %r" % type(cls),
-                    node.start_mark)
-        if newobj and isinstance(cls, type):
-            return cls.__new__(cls, *args, **kwds)
-        else:
-            return cls(*args, **kwds)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:binary',
+        Constructor.construct_yaml_binary)
 
-    def set_python_instance_state(self, instance, state, unsafe=False):
-        if hasattr(instance, '__setstate__'):
-            instance.__setstate__(state)
-        else:
-            slotstate = {}
-            if isinstance(state, tuple) and len(state) == 2:
-                state, slotstate = state
-            if hasattr(instance, '__dict__'):
-                if not unsafe and state:
-                    for key in state.keys():
-                        self.check_state_key(key)
-                instance.__dict__.update(state)
-            elif state:
-                slotstate.update(state)
-            for key, value in slotstate.items():
-                if not unsafe:
-                    self.check_state_key(key)
-                setattr(instance, key, value)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:timestamp',
+        Constructor.construct_yaml_timestamp)
 
-    def construct_python_object(self, suffix, node):
-        # Format:
-        #   !!python/object:module.name { ... state ... }
-        instance = self.make_python_instance(suffix, node, newobj=True)
-        yield instance
-        deep = hasattr(instance, '__setstate__')
-        state = self.construct_mapping(node, deep=deep)
-        self.set_python_instance_state(instance, state)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:omap',
+        Constructor.construct_yaml_omap)
 
-    def construct_python_object_apply(self, suffix, node, newobj=False):
-        # Format:
-        #   !!python/object/apply       # (or !!python/object/new)
-        #   args: [ ... arguments ... ]
-        #   kwds: { ... keywords ... }
-        #   state: ... state ...
-        #   listitems: [ ... listitems ... ]
-        #   dictitems: { ... dictitems ... }
-        # or short format:
-        #   !!python/object/apply [ ... arguments ... ]
-        # The difference between !!python/object/apply and !!python/object/new
-        # is how an object is created, check make_python_instance for details.
-        if isinstance(node, SequenceNode):
-            args = self.construct_sequence(node, deep=True)
-            kwds = {}
-            state = {}
-            listitems = []
-            dictitems = {}
-        else:
-            value = self.construct_mapping(node, deep=True)
-            args = value.get('args', [])
-            kwds = value.get('kwds', {})
-            state = value.get('state', {})
-            listitems = value.get('listitems', [])
-            dictitems = value.get('dictitems', {})
-        instance = self.make_python_instance(suffix, node, args, kwds, newobj)
-        if state:
-            self.set_python_instance_state(instance, state)
-        if listitems:
-            instance.extend(listitems)
-        if dictitems:
-            for key in dictitems:
-                instance[key] = dictitems[key]
-        return instance
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:pairs',
+        Constructor.construct_yaml_pairs)
 
-    def construct_python_object_new(self, suffix, node):
-        return self.construct_python_object_apply(suffix, node, newobj=True)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:set',
+        Constructor.construct_yaml_set)
 
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/none',
-    FullConstructor.construct_yaml_null)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:str',
+        Constructor.construct_yaml_str)
 
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/bool',
-    FullConstructor.construct_yaml_bool)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:seq',
+        Constructor.construct_yaml_seq)
 
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/str',
-    FullConstructor.construct_python_str)
+Constructor.add_Constructor(
+        'tag:yaml.org,2002:map',
+        Constructor.construct_yaml_map)
 
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/unicode',
-    FullConstructor.construct_python_unicode)
+Constructor.add_Constructor(None,
+        Constructor.construct_undefined)
 
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/bytes',
-    FullConstructor.construct_python_bytes)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/int',
-    FullConstructor.construct_yaml_int)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/long',
-    FullConstructor.construct_python_long)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/float',
-    FullConstructor.construct_yaml_float)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/complex',
-    FullConstructor.construct_python_complex)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/list',
-    FullConstructor.construct_yaml_seq)
-
-FullConstructor.add_constructor(
+Constructor.add_Constructor(
     'tag:yaml.org,2002:python/tuple',
-    FullConstructor.construct_python_tuple)
-
-FullConstructor.add_constructor(
-    'tag:yaml.org,2002:python/dict',
-    FullConstructor.construct_yaml_map)
-
-FullConstructor.add_multi_constructor(
-    'tag:yaml.org,2002:python/name:',
-    FullConstructor.construct_python_name)
-
-class UnsafeConstructor(FullConstructor):
-
-    def find_python_module(self, name, mark):
-        return super(UnsafeConstructor, self).find_python_module(name, mark, unsafe=True)
-
-    def find_python_name(self, name, mark):
-        return super(UnsafeConstructor, self).find_python_name(name, mark, unsafe=True)
-
-    def make_python_instance(self, suffix, node, args=None, kwds=None, newobj=False):
-        return super(UnsafeConstructor, self).make_python_instance(
-            suffix, node, args, kwds, newobj, unsafe=True)
-
-    def set_python_instance_state(self, instance, state):
-        return super(UnsafeConstructor, self).set_python_instance_state(
-            instance, state, unsafe=True)
-
-UnsafeConstructor.add_multi_constructor(
-    'tag:yaml.org,2002:python/module:',
-    UnsafeConstructor.construct_python_module)
-
-UnsafeConstructor.add_multi_constructor(
-    'tag:yaml.org,2002:python/object:',
-    UnsafeConstructor.construct_python_object)
-
-UnsafeConstructor.add_multi_constructor(
-    'tag:yaml.org,2002:python/object/new:',
-    UnsafeConstructor.construct_python_object_new)
-
-UnsafeConstructor.add_multi_constructor(
-    'tag:yaml.org,2002:python/object/apply:',
-    UnsafeConstructor.construct_python_object_apply)
-
-# Constructor is same as UnsafeConstructor. Need to leave this in place in case
-# people have extended it directly.
-class Constructor(UnsafeConstructor):
-    pass
+    Constructor.construct_python_tuple)
