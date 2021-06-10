@@ -1,5 +1,5 @@
 from serializers.src.base_serializer import BaseSerializer, BaseDeserializer
-import yaml
+from serializers.src.yaml_parser import load, dump
 import io
 
 class Encoder(BaseSerializer):
@@ -15,9 +15,9 @@ class Encoder(BaseSerializer):
             tmp = f(obj)
         
         if isinstance(file ,str):                                  
-            yaml.dump(tmp, open(file, 'w'))                       
+            dump(tmp, open(file, 'w'))                       
         else:
-            yaml.dump(tmp, file)                       
+            dump(tmp, file)                       
         
     def dumps(self, obj):                      
         tmp = io.StringIO()
@@ -27,10 +27,10 @@ class Encoder(BaseSerializer):
 
 class Decoder(BaseDeserializer):
     def load(self, file):        
-        return self.loads(open(file, 'r'))
+        return load(file)
 
     def loads(self, src):               
-        obj = yaml.load(src)     
+        obj = self.load(src)     
         if isinstance(obj, dict):                      
             tp = obj.get('type')
             if tp == 'func':                
