@@ -13,12 +13,12 @@ from django.contrib.auth.models import User
 
 @pytest.fixture
 def user_data():
-    return {
-        "username": "vasya",
-        "email": "vasya@gmail.com",
-        "password": "vasyapassword",
-        "password2": "vasyapassword",
-    }
+	return {"username": "Vasya", 
+           	"first_name": "vasya", "last_name": "pupkin",
+   		"email": "vasya@mgmail.com",
+                "password": "12345678", 
+                "password2": "12345678", 
+        }
 
 @pytest.fixture
 def user():
@@ -26,7 +26,7 @@ def user():
 
 @pytest.fixture
 def profile_data():
-    return {"gender": "M", "user": user(), "city": "Minsk"}
+    return {"avatar": "", "gender": "M", "city": "Minsk"}
 
 @pytest.fixture
 def post_data():
@@ -37,14 +37,14 @@ def profile():
     return Profile.objects.create(data=profile_data)
 
 @pytest.mark.django_db
-def test_user_reg(user_data):
-    assert UserRegistrationForm(data=user_data).is_valid()
+def test_fail_user_reg(user_data):
+    assert not UserRegisterForm(data=user_data).is_valid()
 
 @pytest.mark.django_db
 def test_post_form(post_data):
     assert PostForm(data=post_data).is_valid()
 
 @pytest.mark.django_db
-def test_profile_create(post_data):
-    assert ProfileForm(data=profile_data).is_valid()
+def test_fail_profile_create(profile_data):
+    assert not ProfileForm().is_valid()
 
