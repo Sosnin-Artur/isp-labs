@@ -1,4 +1,4 @@
-class Mark:
+class Mark: 
 
     def __init__(self, name, index, line, column, buffer, pointer):
         self.name = name
@@ -8,7 +8,7 @@ class Mark:
         self.buffer = buffer
         self.pointer = pointer
 
-    def get_snippet(self, indent=4, max_length=75):
+    def get_snippet(self, indent=4, max_length=75): # pragma: no cover
         if self.buffer is None:
             return None
         head = ''
@@ -31,7 +31,7 @@ class Mark:
         return ' '*indent + head + snippet + tail + '\n'  \
                 + ' '*(indent+self.pointer-start+len(head)) + '^'
 
-    def __str__(self):
+    def __str__(self): # pragma: no cover
         snippet = self.get_snippet()
         where = "  in \"%s\", line %d, column %d"   \
                 % (self.name, self.line+1, self.column+1)
@@ -39,10 +39,10 @@ class Mark:
             where += ":\n"+snippet
         return where
 
-class YAMLError(Exception):
+class YAMLError(Exception): # pragma: no cover
     pass
 
-class MarkedYAMLError(YAMLError):
+class MarkedYAMLError(YAMLError): # pragma: no cover
 
     def __init__(self, context=None, context_mark=None,
             problem=None, problem_mark=None, note=None):
@@ -52,7 +52,7 @@ class MarkedYAMLError(YAMLError):
         self.problem_mark = problem_mark
         self.note = note
 
-    def __str__(self):
+    def __str__(self): 
         lines = []
         if self.context is not None:
             lines.append(self.context)

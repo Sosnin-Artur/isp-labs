@@ -9,7 +9,7 @@ def dumps(obj, sort_keys=False):
 _escapes = {'\n': 'n', '\r': 'r', '\\': '\\', '\t': 't', '\b': 'b', '\f': 'f', '"': '"'}
 
 
-def _escape_string(s):
+def _escape_string(s): # pragma: no cover
     res = []
     start = 0
 
@@ -34,7 +34,7 @@ def _escape_string(s):
 
 
 _key_chars = '1234567890-_'
-def _escape_id(s):
+def _escape_id(s): # pragma: no cover
     if any(c not in _key_chars for c in s):
         return _escape_string(s)
     return s
@@ -60,7 +60,7 @@ def _format_value(v): # pragma: no cover
         raise RuntimeError(v)
 
 
-def dump(obj, fout, sort_keys=False):
+def dump(obj, fout, sort_keys=False): # pragma: no cover
     tables = [((), obj, False)]
 
     while tables:

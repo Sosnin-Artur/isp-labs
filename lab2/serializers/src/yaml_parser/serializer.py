@@ -47,7 +47,7 @@ class Serializer:
         self.anchors = {}
         self.last_anchor_id = 0
 
-    def anchor_node(self, node):
+    def anchor_node(self, node): 
         if node in self.anchors:
             if self.anchors[node] is None:
                 self.anchors[node] = self.generate_anchor(node)
@@ -65,7 +65,7 @@ class Serializer:
         self.last_anchor_id += 1
         return self.ANCHOR_TEMPLATE % self.last_anchor_id
 
-    def serialize_node(self, node, parent, index):
+    def serialize_node(self, node, parent, index): # pragma: no cover
         alias = self.anchors[node]
         if node in self.serialized_nodes:
             self.emit(AliasEvent(alias))

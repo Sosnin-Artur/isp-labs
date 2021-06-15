@@ -301,7 +301,7 @@ class TestPacker(unittest.TestCase):
     
     def test_object_toml(self):
         data = self.serializer.dumps(self.obj)
-        self.assertEqual(self.deserializer.loads(data).num, TestClass().num)        
+        self.assertEqual(self.deserializer.loads(data).num, TestClass().num)            
 
     def test_dict_yaml(self):        
         self.serializer = Creator.create_serializer('yaml')
@@ -348,7 +348,7 @@ class TestPacker(unittest.TestCase):
         self.serializer = Creator.create_serializer('yaml')        
         self.deserializer = Creator.create_deserializer('yaml')
         test_list = self.deserializer.loads(self.serializer.dumps(self.obj.lst))        
-        self.assertEqual(self.obj.lst, test_list)
+        self.assertEqual(self.obj.lst, test_list)    
     
     def test_string_yaml(self):                
         self.serializer = Creator.create_serializer('yaml')        
@@ -379,6 +379,10 @@ class TestPacker(unittest.TestCase):
         self.deserializer = Creator.create_deserializer('yaml')
         data = self.serializer.dumps(TestClass)
         self.assertEqual(self.deserializer.loads(data).kkk, TestClass.kkk)        
+
+    def test_object_yaml(self):
+        data = self.serializer.dumps(self.obj)
+        self.assertEqual(self.deserializer.loads(data).num, TestClass().num)            
 
 if __name__ == "__main__":
     unittest.main()

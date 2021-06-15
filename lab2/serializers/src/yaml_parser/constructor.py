@@ -32,7 +32,7 @@ class BaseConstructor:
             return self.construct_document(node)
         return None
 
-    def construct_document(self, node):
+    def construct_document(self, node): 
         data = self.construct_object(node)
         while self.state_generators:
             state_generators = self.state_generators
@@ -45,7 +45,7 @@ class BaseConstructor:
         self.deep_construct = False
         return data
 
-    def construct_object(self, node, deep=False):
+    def construct_object(self, node, deep=False): # pragma: no cover
         if node in self.constructed_objects:
             return self.constructed_objects[node]
         if deep:
@@ -95,14 +95,14 @@ class BaseConstructor:
             self.deep_construct = old_deep
         return data
 
-    def construct_scalar(self, node):
+    def construct_scalar(self, node): # pragma: no cover
         if not isinstance(node, ScalarNode):
             raise ValueError(None, None,
                     "expected a scalar node, but found %s" % node.id,
                     node.start_mark)
         return node.value
 
-    def construct_sequence(self, node, deep=False):
+    def construct_sequence(self, node, deep=False): # pragma: no cover
         if not isinstance(node, SequenceNode):
             raise ValueError(None, None,
                     "expected a sequence node, but found %s" % node.id,
@@ -110,7 +110,7 @@ class BaseConstructor:
         return [self.construct_object(child, deep=deep)
                 for child in node.value]
 
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node, deep=False): # pragma: no cover
         if not isinstance(node, MappingNode):
             raise ValueError(None, None,
                     "expected a mapping node, but found %s" % node.id,
@@ -125,7 +125,7 @@ class BaseConstructor:
             mapping[key] = value
         return mapping
 
-    def construct_pairs(self, node, deep=False):
+    def construct_pairs(self, node, deep=False): # pragma: no cover
         if not isinstance(node, MappingNode):
             raise ValueError(None, None,
                     "expected a mapping node, but found %s" % node.id,
@@ -141,24 +141,18 @@ class BaseConstructor:
     def add_Constructor(cls, tag, Constructor):
         if not 'yaml_Constructors' in cls.__dict__:
             cls.yaml_Constructors = cls.yaml_Constructors.copy()
-        cls.yaml_Constructors[tag] = Constructor
-
-    @classmethod
-    def add_multi_Constructor(cls, tag_prefix, multi_Constructor):
-        if not 'yaml_multi_Constructors' in cls.__dict__:
-            cls.yaml_multi_Constructors = cls.yaml_multi_Constructors.copy()
-        cls.yaml_multi_Constructors[tag_prefix] = multi_Constructor
+        cls.yaml_Constructors[tag] = Constructor    
 
 class Constructor(BaseConstructor):
 
-    def construct_scalar(self, node):
+    def construct_scalar(self, node): # pragma: no cover
         if isinstance(node, MappingNode):
             for key_node, value_node in node.value:
                 if key_node.tag == 'tag:yaml.org,2002:value':
                     return self.construct_scalar(value_node)
         return super().construct_scalar(node)
-
-    def flatten_mapping(self, node):
+ 
+    def flatten_mapping(self, node): # pragma: no cover
         merge = []
         index = 0
         while index < len(node.value):
@@ -191,12 +185,7 @@ class Constructor(BaseConstructor):
             else:
                 index += 1
         if merge:
-            node.value = merge + node.value
-
-    def construct_mapping(self, node, deep=False):
-        if isinstance(node, MappingNode):
-            self.flatten_mapping(node)
-        return super().construct_mapping(node, deep=deep)
+            node.value = merge + node.value    
 
     def construct_yaml_null(self, node):
         self.construct_scalar(node)
@@ -211,11 +200,11 @@ class Constructor(BaseConstructor):
         'off':      False,
     }
 
-    def construct_yaml_bool(self, node):
+    def construct_yaml_bool(self, node): # pragma: no cover
         value = self.construct_scalar(node)
         return self.bool_values[value.lower()]
 
-    def construct_yaml_int(self, node):
+    def construct_yaml_int(self, node): # pragma: no cover
         value = self.construct_scalar(node)
         value = value.replace('_', '')
         sign = +1
@@ -248,7 +237,7 @@ class Constructor(BaseConstructor):
         inf_value *= inf_value
     nan_value = -inf_value/inf_value   
 
-    def construct_yaml_float(self, node):
+    def construct_yaml_float(self, node): # pragma: no cover
         value = self.construct_scalar(node)
         value = value.replace('_', '').lower()
         sign = +1
@@ -272,111 +261,6 @@ class Constructor(BaseConstructor):
         else:
             return sign*float(value)
 
-    def construct_yaml_binary(self, node):
-        try:
-            value = self.construct_scalar(node).encode('ascii')
-        except UnicodeEncodeError as exc:
-            raise ValueError(None, None,
-                    "failed to convert base64 data into ascii: %s" % exc,
-                    node.start_mark)
-        try:
-            if hasattr(base64, 'decodebytes'):
-                return base64.decodebytes(value)
-            else:
-                return base64.decodestring(value)
-        except binascii.Error as exc:
-            raise ValueError(None, None,
-                    "failed to decode base64 data: %s" % exc, node.start_mark)
-
-    timestamp_regexp = re.compile(
-            r'''^(?P<year>[0-9][0-9][0-9][0-9])
-                -(?P<month>[0-9][0-9]?)
-                -(?P<day>[0-9][0-9]?)
-                (?:(?:[Tt]|[ \t]+)
-                (?P<hour>[0-9][0-9]?)
-                :(?P<minute>[0-9][0-9])
-                :(?P<second>[0-9][0-9])
-                (?:\.(?P<fraction>[0-9]*))?
-                (?:[ \t]*(?P<tz>Z|(?P<tz_sign>[-+])(?P<tz_hour>[0-9][0-9]?)
-                (?::(?P<tz_minute>[0-9][0-9]))?))?)?$''', re.X)
-
-    def construct_yaml_timestamp(self, node):
-        value = self.construct_scalar(node)
-        match = self.timestamp_regexp.match(node.value)
-        values = match.groupdict()
-        year = int(values['year'])
-        month = int(values['month'])
-        day = int(values['day'])
-        if not values['hour']:
-            return datetime.date(year, month, day)
-        hour = int(values['hour'])
-        minute = int(values['minute'])
-        second = int(values['second'])
-        fraction = 0
-        tzinfo = None
-        if values['fraction']:
-            fraction = values['fraction'][:6]
-            while len(fraction) < 6:
-                fraction += '0'
-            fraction = int(fraction)
-        if values['tz_sign']:
-            tz_hour = int(values['tz_hour'])
-            tz_minute = int(values['tz_minute'] or 0)
-            delta = datetime.timedelta(hours=tz_hour, minutes=tz_minute)
-            if values['tz_sign'] == '-':
-                delta = -delta
-            tzinfo = datetime.timezone(delta)
-        elif values['tz']:
-            tzinfo = datetime.timezone.utc
-        return datetime.datetime(year, month, day, hour, minute, second, fraction,
-                                 tzinfo=tzinfo)
-
-    def construct_yaml_omap(self, node):        
-        omap = []
-        yield omap
-        if not isinstance(node, SequenceNode):
-            raise ValueError("while constructing an ordered map", node.start_mark,
-                    "expected a sequence, but found %s" % node.id, node.start_mark)
-        for subnode in node.value:
-            if not isinstance(subnode, MappingNode):
-                raise ValueError("while constructing an ordered map", node.start_mark,
-                        "expected a mapping of length 1, but found %s" % subnode.id,
-                        subnode.start_mark)
-            if len(subnode.value) != 1:
-                raise ValueError("while constructing an ordered map", node.start_mark,
-                        "expected a single mapping item, but found %d items" % len(subnode.value),
-                        subnode.start_mark)
-            key_node, value_node = subnode.value[0]
-            key = self.construct_object(key_node)
-            value = self.construct_object(value_node)
-            omap.append((key, value))
-
-    def construct_yaml_pairs(self, node):
-        pairs = []
-        yield pairs
-        if not isinstance(node, SequenceNode):
-            raise ValueError("while constructing pairs", node.start_mark,
-                    "expected a sequence, but found %s" % node.id, node.start_mark)
-        for subnode in node.value:
-            if not isinstance(subnode, MappingNode):
-                raise ValueError("while constructing pairs", node.start_mark,
-                        "expected a mapping of length 1, but found %s" % subnode.id,
-                        subnode.start_mark)
-            if len(subnode.value) != 1:
-                raise ValueError("while constructing pairs", node.start_mark,
-                        "expected a single mapping item, but found %d items" % len(subnode.value),
-                        subnode.start_mark)
-            key_node, value_node = subnode.value[0]
-            key = self.construct_object(key_node)
-            value = self.construct_object(value_node)
-            pairs.append((key, value))
-
-    def construct_yaml_set(self, node):
-        data = set()
-        yield data
-        value = self.construct_mapping(node)
-        data.update(value)
-
     def construct_yaml_str(self, node):
         return self.construct_scalar(node)
 
@@ -390,17 +274,7 @@ class Constructor(BaseConstructor):
         yield data
         value = self.construct_mapping(node)
         data.update(value)
-
-    def construct_yaml_object(self, node, cls):
-        data = cls.__new__(cls)
-        yield data
-        if hasattr(data, '__setstate__'):
-            state = self.construct_mapping(node, deep=True)
-            data.__setstate__(state)
-        else:
-            state = self.construct_mapping(node)
-            data.__dict__.update(state)
-
+    
     def construct_undefined(self, node):
         raise ValueError(None, None,
                 "could not determine a Constructor for the tag %r" % node.tag,
@@ -424,26 +298,6 @@ Constructor.add_Constructor(
 Constructor.add_Constructor(
         'tag:yaml.org,2002:float',
         Constructor.construct_yaml_float)
-
-Constructor.add_Constructor(
-        'tag:yaml.org,2002:binary',
-        Constructor.construct_yaml_binary)
-
-Constructor.add_Constructor(
-        'tag:yaml.org,2002:timestamp',
-        Constructor.construct_yaml_timestamp)
-
-Constructor.add_Constructor(
-        'tag:yaml.org,2002:omap',
-        Constructor.construct_yaml_omap)
-
-Constructor.add_Constructor(
-        'tag:yaml.org,2002:pairs',
-        Constructor.construct_yaml_pairs)
-
-Constructor.add_Constructor(
-        'tag:yaml.org,2002:set',
-        Constructor.construct_yaml_set)
 
 Constructor.add_Constructor(
         'tag:yaml.org,2002:str',

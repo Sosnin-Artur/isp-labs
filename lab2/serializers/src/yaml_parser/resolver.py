@@ -23,7 +23,7 @@ class BaseResolver:
         self.resolver_prefix_paths = []
 
     @classmethod
-    def add_implicit_resolver(cls, tag, regexp, first):
+    def add_implicit_resolver(cls, tag, regexp, first): # pragma: no cover
         if not 'yaml_implicit_resolvers' in cls.__dict__:
             implicit_resolvers = {}
             for key in cls.yaml_implicit_resolvers:
@@ -34,49 +34,8 @@ class BaseResolver:
         for ch in first:
             cls.yaml_implicit_resolvers.setdefault(ch, []).append((tag, regexp))
 
-    @classmethod
-    def add_path_resolver(cls, tag, path, kind=None):       
-        if not 'yaml_path_resolvers' in cls.__dict__:
-            cls.yaml_path_resolvers = cls.yaml_path_resolvers.copy()
-        new_path = []
-        for element in path:
-            if isinstance(element, (list, tuple)):
-                if len(element) == 2:
-                    node_check, index_check = element
-                elif len(element) == 1:
-                    node_check = element[0]
-                    index_check = True
-                else:
-                    raise ResolverError("Invalid path element: %s" % element)
-            else:
-                node_check = None
-                index_check = element
-            if node_check is str:
-                node_check = ScalarNode
-            elif node_check is list:
-                node_check = SequenceNode
-            elif node_check is dict:
-                node_check = MappingNode
-            elif node_check not in [ScalarNode, SequenceNode, MappingNode]  \
-                    and not isinstance(node_check, str) \
-                    and node_check is not None:
-                raise ResolverError("Invalid node checker: %s" % node_check)
-            if not isinstance(index_check, (str, int))  \
-                    and index_check is not None:
-                raise ResolverError("Invalid index checker: %s" % index_check)
-            new_path.append((node_check, index_check))
-        if kind is str:
-            kind = ScalarNode
-        elif kind is list:
-            kind = SequenceNode
-        elif kind is dict:
-            kind = MappingNode
-        elif kind not in [ScalarNode, SequenceNode, MappingNode]    \
-                and kind is not None:
-            raise ResolverError("Invalid node kind: %s" % kind)
-        cls.yaml_path_resolvers[tuple(new_path), kind] = tag
-
-    def descend_resolver(self, current_node, current_index):
+    
+    def descend_resolver(self, current_node, current_index): # pragma: no cover
         if not self.yaml_path_resolvers:
             return
         exact_paths = {}
@@ -106,7 +65,7 @@ class BaseResolver:
         self.resolver_prefix_paths.pop()
 
     def check_resolver_prefix(self, depth, path, kind,
-            current_node, current_index):
+            current_node, current_index): # pragma: no cover
         node_check, index_check = path[depth-1]
         if isinstance(node_check, str):
             if current_node.tag != node_check:
@@ -128,7 +87,7 @@ class BaseResolver:
                 return
         return True
 
-    def resolve(self, kind, value, implicit):
+    def resolve(self, kind, value, implicit): # pragma: no cover
         if kind is ScalarNode and implicit[0]:
             if value == '':
                 resolvers = self.yaml_implicit_resolvers.get('', [])

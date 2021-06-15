@@ -1,7 +1,7 @@
 import codecs, re
 from .error import *
 
-class Reader(object):
+class Reader(object): # pragma: no cover
     def __init__(self, stream):
         self.name = None
         self.stream = None

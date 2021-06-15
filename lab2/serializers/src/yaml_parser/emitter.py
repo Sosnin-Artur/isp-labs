@@ -74,7 +74,7 @@ class Emitter:
             self.state()
             self.event = None
     
-    def need_more_events(self):
+    def need_more_events(self): # pragma: no cover
         if not self.events:
             return True
         event = self.events[0]
@@ -87,7 +87,7 @@ class Emitter:
         else:
             return False
 
-    def need_events(self, count):
+    def need_events(self, count): # pragma: no cover
         level = 0
         for event in self.events[1:]:
             if isinstance(event, (DocumentStartEvent, CollectionStartEvent)):
@@ -100,7 +100,7 @@ class Emitter:
                 return False
         return (len(self.events) < count+1)
 
-    def increase_indent(self, flow=False, indentless=False):
+    def increase_indent(self, flow=False, indentless=False): # pragma: no cover
         self.indents.append(self.indent)
         if self.indent is None:
             if flow:
@@ -110,7 +110,7 @@ class Emitter:
         elif not indentless:
             self.indent += self.best_indent
 
-    def expect_stream_start(self):
+    def expect_stream_start(self): # pragma: no cover
         if isinstance(self.event, StreamStartEvent):
             if self.event.encoding and not hasattr(self.stream, 'encoding'):
                 self.encoding = self.event.encoding
@@ -120,13 +120,13 @@ class Emitter:
             raise EmitterError("expected StreamStartEvent, but got %s"
                     % self.event)
 
-    def expect_nothing(self):
+    def expect_nothing(self): # pragma: no cover
         raise EmitterError("expected nothing, but got %s" % self.event)
 
-    def expect_first_document_start(self):
+    def expect_first_document_start(self): # pragma: no cover
         return self.expect_document_start(first=True)
 
-    def expect_document_start(self, first=False):
+    def expect_document_start(self, first=False): # pragma: no cover
         if isinstance(self.event, DocumentStartEvent):
             if (self.event.version or self.event.tags) and self.open_ended:
                 self.write_indicator('...', True)
@@ -162,7 +162,7 @@ class Emitter:
             raise EmitterError("expected DocumentStartEvent, but got %s"
                     % self.event)
 
-    def expect_document_end(self):
+    def expect_document_end(self): # pragma: no cover
         if isinstance(self.event, DocumentEndEvent):
             self.write_indent()
             if self.event.explicit:
@@ -174,12 +174,12 @@ class Emitter:
             raise EmitterError("expected DocumentEndEvent, but got %s"
                     % self.event)
 
-    def expect_document_root(self):
+    def expect_document_root(self): # pragma: no cover
         self.states.append(self.expect_document_end)
         self.expect_node(root=True)
 
     def expect_node(self, root=False, sequence=False, mapping=False,
-            simple_key=False):
+            simple_key=False): # pragma: no cover
         self.root_context = root
         self.sequence_context = sequence
         self.mapping_context = mapping
@@ -206,25 +206,25 @@ class Emitter:
         else:
             raise EmitterError("expected NodeEvent, but got %s" % self.event)
 
-    def expect_alias(self):
+    def expect_alias(self): # pragma: no cover
         if self.event.anchor is None:
             raise EmitterError("anchor is not specified for alias")
         self.process_anchor('*')
         self.state = self.states.pop()
 
-    def expect_scalar(self):
+    def expect_scalar(self): # pragma: no cover
         self.increase_indent(flow=True)
         self.process_scalar()
         self.indent = self.indents.pop()
         self.state = self.states.pop()
 
-    def expect_flow_sequence(self):
+    def expect_flow_sequence(self): # pragma: no cover
         self.write_indicator('[', True, whitespace=True)
         self.flow_level += 1
         self.increase_indent(flow=True)
         self.state = self.expect_first_flow_sequence_item
 
-    def expect_first_flow_sequence_item(self):
+    def expect_first_flow_sequence_item(self): # pragma: no cover
         if isinstance(self.event, SequenceEndEvent):
             self.indent = self.indents.pop()
             self.flow_level -= 1
@@ -236,7 +236,7 @@ class Emitter:
             self.states.append(self.expect_flow_sequence_item)
             self.expect_node(sequence=True)
 
-    def expect_flow_sequence_item(self):
+    def expect_flow_sequence_item(self): # pragma: no cover
         if isinstance(self.event, SequenceEndEvent):
             self.indent = self.indents.pop()
             self.flow_level -= 1
@@ -252,13 +252,13 @@ class Emitter:
             self.states.append(self.expect_flow_sequence_item)
             self.expect_node(sequence=True)
 
-    def expect_flow_mapping(self):
+    def expect_flow_mapping(self): # pragma: no cover
         self.write_indicator('{', True, whitespace=True)
         self.flow_level += 1
         self.increase_indent(flow=True)
         self.state = self.expect_first_flow_mapping_key
 
-    def expect_first_flow_mapping_key(self):
+    def expect_first_flow_mapping_key(self): # pragma: no cover
         if isinstance(self.event, MappingEndEvent):
             self.indent = self.indents.pop()
             self.flow_level -= 1
@@ -275,7 +275,7 @@ class Emitter:
                 self.states.append(self.expect_flow_mapping_value)
                 self.expect_node(mapping=True)
 
-    def expect_flow_mapping_key(self):
+    def expect_flow_mapping_key(self): # pragma: no cover
         if isinstance(self.event, MappingEndEvent):
             self.indent = self.indents.pop()
             self.flow_level -= 1
@@ -296,27 +296,27 @@ class Emitter:
                 self.states.append(self.expect_flow_mapping_value)
                 self.expect_node(mapping=True)
 
-    def expect_flow_mapping_simple_value(self):
+    def expect_flow_mapping_simple_value(self): # pragma: no cover
         self.write_indicator(':', False)
         self.states.append(self.expect_flow_mapping_key)
         self.expect_node(mapping=True)
 
-    def expect_flow_mapping_value(self):
+    def expect_flow_mapping_value(self): # pragma: no cover
         if self.canonical or self.column > self.best_width:
             self.write_indent()
         self.write_indicator(':', True)
         self.states.append(self.expect_flow_mapping_key)
         self.expect_node(mapping=True)
 
-    def expect_block_sequence(self):
+    def expect_block_sequence(self): # pragma: no cover
         indentless = (self.mapping_context and not self.indention)
         self.increase_indent(flow=False, indentless=indentless)
         self.state = self.expect_first_block_sequence_item
 
-    def expect_first_block_sequence_item(self):
+    def expect_first_block_sequence_item(self): # pragma: no cover
         return self.expect_block_sequence_item(first=True)
 
-    def expect_block_sequence_item(self, first=False):
+    def expect_block_sequence_item(self, first=False): # pragma: no cover
         if not first and isinstance(self.event, SequenceEndEvent):
             self.indent = self.indents.pop()
             self.state = self.states.pop()
@@ -326,14 +326,14 @@ class Emitter:
             self.states.append(self.expect_block_sequence_item)
             self.expect_node(sequence=True)
 
-    def expect_block_mapping(self):
+    def expect_block_mapping(self): # pragma: no cover
         self.increase_indent(flow=False)
         self.state = self.expect_first_block_mapping_key
 
-    def expect_first_block_mapping_key(self):
+    def expect_first_block_mapping_key(self): # pragma: no cover
         return self.expect_block_mapping_key(first=True)
 
-    def expect_block_mapping_key(self, first=False):
+    def expect_block_mapping_key(self, first=False): # pragma: no cover
         if not first and isinstance(self.event, MappingEndEvent):
             self.indent = self.indents.pop()
             self.state = self.states.pop()
@@ -347,7 +347,7 @@ class Emitter:
                 self.states.append(self.expect_block_mapping_value)
                 self.expect_node(mapping=True)
 
-    def expect_block_mapping_simple_value(self):
+    def expect_block_mapping_simple_value(self): 
         self.write_indicator(':', False)
         self.states.append(self.expect_block_mapping_key)
         self.expect_node(mapping=True)
@@ -373,7 +373,7 @@ class Emitter:
         return (isinstance(event, ScalarEvent) and event.anchor is None
                 and event.tag is None and event.implicit and event.value == '')
 
-    def check_simple_key(self):
+    def check_simple_key(self): # pragma: no cover
         length = 0
         if isinstance(self.event, NodeEvent) and self.event.anchor is not None:
             if self.prepared_anchor is None:
@@ -393,7 +393,7 @@ class Emitter:
                     and not self.analysis.empty and not self.analysis.multiline)
             or self.check_empty_sequence() or self.check_empty_mapping()))
 
-    def process_anchor(self, indicator):
+    def process_anchor(self, indicator): # pragma: no cover
         if self.event.anchor is None:
             self.prepared_anchor = None
             return
@@ -403,7 +403,7 @@ class Emitter:
             self.write_indicator(indicator+self.prepared_anchor, True)
         self.prepared_anchor = None
 
-    def process_tag(self):
+    def process_tag(self): # pragma: no cover
         tag = self.event.tag
         if isinstance(self.event, ScalarEvent):
             if self.style is None:
@@ -428,7 +428,7 @@ class Emitter:
             self.write_indicator(self.prepared_tag, True)
         self.prepared_tag = None
 
-    def choose_scalar_style(self):
+    def choose_scalar_style(self): # pragma: no cover
         if self.analysis is None:
             self.analysis = self.analyze_scalar(self.event.value)
         if self.event.style == '"' or self.canonical:
@@ -449,7 +449,7 @@ class Emitter:
                 return '\''
         return '"'
 
-    def process_scalar(self):
+    def process_scalar(self): # pragma: no cover
         if self.analysis is None:
             self.analysis = self.analyze_scalar(self.event.value)
         if self.style is None:
@@ -468,13 +468,13 @@ class Emitter:
         self.analysis = None
         self.style = None
 
-    def prepare_version(self, version):
+    def prepare_version(self, version): # pragma: no cover
         major, minor = version
         if major != 1:
             raise EmitterError("unsupported YAML version: %d.%d" % (major, minor))
         return '%d.%d' % (major, minor)
 
-    def prepare_tag_handle(self, handle):
+    def prepare_tag_handle(self, handle): # pragma: no cover
         if not handle:
             raise EmitterError("tag handle must not be empty")
         if handle[0] != '!' or handle[-1] != '!':
@@ -486,7 +486,7 @@ class Emitter:
                         % (ch, handle))
         return handle
 
-    def prepare_tag_prefix(self, prefix):
+    def prepare_tag_prefix(self, prefix): # pragma: no cover
         if not prefix:
             raise EmitterError("tag prefix must not be empty")
         chunks = []
@@ -509,7 +509,7 @@ class Emitter:
             chunks.append(prefix[start:end])
         return ''.join(chunks)
 
-    def prepare_tag(self, tag):
+    def prepare_tag(self, tag): # pragma: no cover
         if not tag:
             raise EmitterError("tag must not be empty")
         if tag == '!':
@@ -545,7 +545,7 @@ class Emitter:
         else:
             return '!<%s>' % suffix_text
 
-    def prepare_anchor(self, anchor):
+    def prepare_anchor(self, anchor): # pragma: no cover
         if not anchor:
             raise EmitterError("anchor must not be empty")
         for ch in anchor:
@@ -555,22 +555,18 @@ class Emitter:
                         % (ch, anchor))
         return anchor
 
-    def analyze_scalar(self, scalar):
-
-        # Empty scalar is a special case.
+    def analyze_scalar(self, scalar): # pragma: no cover
         if not scalar:
             return ScalarAnalysis(scalar=scalar, empty=True, multiline=False,
                     allow_flow_plain=False, allow_block_plain=True,
                     allow_single_quoted=True, allow_double_quoted=True,
                     allow_block=False)
-
-        # Indicators and special characters.
+        
         block_indicators = False
         flow_indicators = False
         line_breaks = False
         special_characters = False
 
-        # Important whitespace combinations.
         leading_space = False
         leading_break = False
         trailing_space = False
@@ -578,31 +574,24 @@ class Emitter:
         break_space = False
         space_break = False
 
-        # Check document indicators.
         if scalar.startswith('---') or scalar.startswith('...'):
             block_indicators = True
             flow_indicators = True
 
-        # First character or preceded by a whitespace.
         preceded_by_whitespace = True
 
-        # Last character or followed by a whitespace.
         followed_by_whitespace = (len(scalar) == 1 or
                 scalar[1] in '\0 \t\r\n\x85\u2028\u2029')
 
-        # The previous character is a space.
         previous_space = False
 
-        # The previous character is a break.
         previous_break = False
 
         index = 0
         while index < len(scalar):
             ch = scalar[index]
 
-            # Check for indicators.
             if index == 0:
-                # Leading indicators are special characters.
                 if ch in '#,[]{}&*!|>\'\"%@`':
                     flow_indicators = True
                     block_indicators = True
@@ -614,7 +603,6 @@ class Emitter:
                     flow_indicators = True
                     block_indicators = True
             else:
-                # Some indicators cannot appear within a scalar as well.
                 if ch in ',?[]{}':
                     flow_indicators = True
                 if ch == ':':
@@ -625,7 +613,6 @@ class Emitter:
                     flow_indicators = True
                     block_indicators = True
 
-            # Check for line breaks, special, and unicode characters.
             if ch in '\n\x85\u2028\u2029':
                 line_breaks = True
             if not (ch == '\n' or '\x20' <= ch <= '\x7E'):
@@ -638,7 +625,6 @@ class Emitter:
                 else:
                     special_characters = True
 
-            # Detect important whitespace combinations.
             if ch == ' ':
                 if index == 0:
                     leading_space = True
@@ -661,49 +647,37 @@ class Emitter:
                 previous_space = False
                 previous_break = False
 
-            # Prepare for the next character.
             index += 1
             preceded_by_whitespace = (ch in '\0 \t\r\n\x85\u2028\u2029')
             followed_by_whitespace = (index+1 >= len(scalar) or
                     scalar[index+1] in '\0 \t\r\n\x85\u2028\u2029')
 
-        # Let's decide what styles are allowed.
         allow_flow_plain = True
         allow_block_plain = True
         allow_single_quoted = True
         allow_double_quoted = True
         allow_block = True
 
-        # Leading and trailing whitespaces are bad for plain scalars.
         if (leading_space or leading_break
                 or trailing_space or trailing_break):
             allow_flow_plain = allow_block_plain = False
 
-        # We do not permit trailing spaces for block scalars.
         if trailing_space:
             allow_block = False
 
-        # Spaces at the beginning of a new line are only acceptable for block
-        # scalars.
         if break_space:
             allow_flow_plain = allow_block_plain = allow_single_quoted = False
 
-        # Spaces followed by breaks, as well as special character are only
-        # allowed for double quoted scalars.
         if space_break or special_characters:
             allow_flow_plain = allow_block_plain =  \
             allow_single_quoted = allow_block = False
 
-        # Although the plain scalar writer supports breaks, we never emit
-        # multiline plain scalars.
         if line_breaks:
             allow_flow_plain = allow_block_plain = False
 
-        # Flow indicators are forbidden for flow plain scalars.
         if flow_indicators:
             allow_flow_plain = False
 
-        # Block indicators are forbidden for block plain scalars.
         if block_indicators:
             allow_block_plain = False
 
@@ -715,14 +689,11 @@ class Emitter:
                 allow_double_quoted=allow_double_quoted,
                 allow_block=allow_block)
 
-    # Writers.
-
     def flush_stream(self):
         if hasattr(self.stream, 'flush'):
             self.stream.flush()
 
-    def write_stream_start(self):
-        # Write BOM if needed.
+    def write_stream_start(self):        
         if self.encoding and self.encoding.startswith('utf-16'):
             self.stream.write('\uFEFF'.encode(self.encoding))
 
@@ -730,7 +701,7 @@ class Emitter:
         self.flush_stream()
 
     def write_indicator(self, indicator, need_whitespace,
-            whitespace=False, indention=False):
+            whitespace=False, indention=False): # pragma: no cover
         if self.whitespace or not need_whitespace:
             data = indicator
         else:
@@ -743,7 +714,7 @@ class Emitter:
             data = data.encode(self.encoding)
         self.stream.write(data)
 
-    def write_indent(self):
+    def write_indent(self): # pragma: no cover
         indent = self.indent or 0
         if not self.indention or self.column > indent   \
                 or (self.column == indent and not self.whitespace):
@@ -781,9 +752,7 @@ class Emitter:
         self.stream.write(data)
         self.write_line_break()
 
-    # Scalar streams.
-
-    def write_single_quoted(self, text, split=True):
+    def write_single_quoted(self, text, split=True): # pragma: no cover
         self.write_indicator('\'', True)
         spaces = False
         breaks = False
@@ -855,7 +824,7 @@ class Emitter:
         '\u2029':   'P',
     }
 
-    def write_double_quoted(self, text, split=True):
+    def write_double_quoted(self, text, split=True): # pragma: no cover
         self.write_indicator('"', True)
         start = end = 0
         while end <= len(text):
@@ -909,7 +878,7 @@ class Emitter:
             end += 1
         self.write_indicator('"', False)
 
-    def determine_block_hints(self, text):
+    def determine_block_hints(self, text): # pragma: no cover
         hints = ''
         if text:
             if text[0] in ' \n\x85\u2028\u2029':
@@ -920,7 +889,7 @@ class Emitter:
                 hints += '+'
         return hints
 
-    def write_folded(self, text):
+    def write_folded(self, text): # pragma: no cover
         hints = self.determine_block_hints(text)
         self.write_indicator('>'+hints, True)
         if hints[-1:] == '+':
@@ -974,7 +943,7 @@ class Emitter:
                 spaces = (ch == ' ')
             end += 1
 
-    def write_literal(self, text):
+    def write_literal(self, text): # pragma: no cover
         hints = self.determine_block_hints(text)
         self.write_indicator('|'+hints, True)
         if hints[-1:] == '+':
@@ -1009,7 +978,7 @@ class Emitter:
                 breaks = (ch in '\n\x85\u2028\u2029')
             end += 1
 
-    def write_plain(self, text, split=True):
+    def write_plain(self, text, split=True): # pragma: no cover
         if self.root_context:
             self.open_ended = True
         if not text:

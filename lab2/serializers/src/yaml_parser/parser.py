@@ -20,7 +20,7 @@ class Parser:
         self.states = []
         self.state = None
 
-    def check_event(self, *choices):
+    def check_event(self, *choices): # pragma: no cover
         if self.current_event is None:
             if self.state:
                 self.current_event = self.state()
@@ -32,13 +32,13 @@ class Parser:
                     return True
         return False
 
-    def peek_event(self):
+    def peek_event(self): # pragma: no cover
         if self.current_event is None:
             if self.state:
                 self.current_event = self.state()
         return self.current_event
 
-    def get_event(self):
+    def get_event(self): # pragma: no cover
         if self.current_event is None:
             if self.state:
                 self.current_event = self.state()
@@ -53,7 +53,7 @@ class Parser:
         self.state = self.parse_implicit_document_start
         return event
 
-    def parse_implicit_document_start(self):
+    def parse_implicit_document_start(self): # pragma: no cover
         if not self.check_token(DirectiveToken, DocumentStartToken,
                 StreamEndToken):
             self.tag_handles = self.DEFAULT_TAGS
@@ -70,7 +70,7 @@ class Parser:
         else:
             return self.parse_document_start()
 
-    def parse_document_start(self):
+    def parse_document_start(self): # pragma: no cover
         while self.check_token(DocumentEndToken):
             self.get_token()
 
@@ -97,7 +97,7 @@ class Parser:
             self.state = None
         return event
 
-    def parse_document_end(self):
+    def parse_document_end(self): # pragma: no cover
         token = self.peek_token()
         start_mark = end_mark = token.start_mark
         explicit = False
@@ -111,7 +111,7 @@ class Parser:
 
         return event
 
-    def parse_document_content(self):
+    def parse_document_content(self): # pragma: no cover
         if self.check_token(DirectiveToken,
                 DocumentStartToken, DocumentEndToken, StreamEndToken):
             event = self.process_empty_scalar(self.peek_token().start_mark)
@@ -120,7 +120,7 @@ class Parser:
         else:
             return self.parse_block_node()
 
-    def process_directives(self):
+    def process_directives(self): # pragma: no cover
         self.yaml_version = None
         self.tag_handles = {}
         while self.check_token(DirectiveToken):
@@ -160,7 +160,7 @@ class Parser:
     def parse_block_node_or_indentless_sequence(self):
         return self.parse_node(block=True, indentless_sequence=True)
 
-    def parse_node(self, block=False, indentless_sequence=False):
+    def parse_node(self, block=False, indentless_sequence=False): # pragma: no cover
         if self.check_token(AliasToken):
             token = self.get_token()
             event = AliasEvent(token.value, token.start_mark, token.end_mark)
@@ -259,7 +259,7 @@ class Parser:
         self.marks.append(token.start_mark)
         return self.parse_block_sequence_entry()
 
-    def parse_block_sequence_entry(self):
+    def parse_block_sequence_entry(self): # pragma: no cover
         if self.check_token(BlockEntryToken):
             token = self.get_token()
             if not self.check_token(BlockEntryToken, BlockEndToken):
@@ -278,7 +278,7 @@ class Parser:
         self.marks.pop()
         return event
 
-    def parse_indentless_sequence_entry(self):
+    def parse_indentless_sequence_entry(self): # pragma: no cover
         if self.check_token(BlockEntryToken):
             token = self.get_token()
             if not self.check_token(BlockEntryToken,
@@ -298,7 +298,7 @@ class Parser:
         self.marks.append(token.start_mark)
         return self.parse_block_mapping_key()
 
-    def parse_block_mapping_key(self):
+    def parse_block_mapping_key(self): # pragma: no cover
         if self.check_token(KeyToken):
             token = self.get_token()
             if not self.check_token(KeyToken, ValueToken, BlockEndToken):
@@ -317,7 +317,7 @@ class Parser:
         self.marks.pop()
         return event
 
-    def parse_block_mapping_value(self):
+    def parse_block_mapping_value(self): # pragma: no cover
         if self.check_token(ValueToken):
             token = self.get_token()
             if not self.check_token(KeyToken, ValueToken, BlockEndToken):
@@ -336,7 +336,7 @@ class Parser:
         self.marks.append(token.start_mark)
         return self.parse_flow_sequence_entry(first=True)
 
-    def parse_flow_sequence_entry(self, first=False):
+    def parse_flow_sequence_entry(self, first=False): # pragma: no cover
         if not self.check_token(FlowSequenceEndToken):
             if not first:
                 if self.check_token(FlowEntryToken):
@@ -362,7 +362,7 @@ class Parser:
         self.marks.pop()
         return event
 
-    def parse_flow_sequence_entry_mapping_key(self):
+    def parse_flow_sequence_entry_mapping_key(self): # pragma: no cover
         token = self.get_token()
         if not self.check_token(ValueToken,
                 FlowEntryToken, FlowSequenceEndToken):
@@ -372,7 +372,7 @@ class Parser:
             self.state = self.parse_flow_sequence_entry_mapping_value
             return self.process_empty_scalar(token.end_mark)
 
-    def parse_flow_sequence_entry_mapping_value(self):
+    def parse_flow_sequence_entry_mapping_value(self): # pragma: no cover
         if self.check_token(ValueToken):
             token = self.get_token()
             if not self.check_token(FlowEntryToken, FlowSequenceEndToken):
@@ -391,12 +391,12 @@ class Parser:
         token = self.peek_token()
         return MappingEndEvent(token.start_mark, token.start_mark)
 
-    def parse_flow_mapping_first_key(self):
+    def parse_flow_mapping_first_key(self): 
         token = self.get_token()
         self.marks.append(token.start_mark)
         return self.parse_flow_mapping_key(first=True)
 
-    def parse_flow_mapping_key(self, first=False):
+    def parse_flow_mapping_key(self, first=False): # pragma: no cover
         if not self.check_token(FlowMappingEndToken):
             if not first:
                 if self.check_token(FlowEntryToken):
@@ -423,7 +423,7 @@ class Parser:
         self.marks.pop()
         return event
 
-    def parse_flow_mapping_value(self):
+    def parse_flow_mapping_value(self): # pragma: no cover
         if self.check_token(ValueToken):
             token = self.get_token()
             if not self.check_token(FlowEntryToken, FlowMappingEndToken):

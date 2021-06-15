@@ -4,7 +4,6 @@ import serializers.src.toml_parser.writer as toml_writer
 import types
 
 class Encoder(BaseSerializer):
-    
     def __init__(self):
         super().__init__()
 

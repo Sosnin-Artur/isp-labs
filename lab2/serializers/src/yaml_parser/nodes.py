@@ -1,5 +1,5 @@
 
-class Node(object):
+class Node(object): # pragma: no cover
     def __init__(self, tag, value, start_mark, end_mark):
         self.tag = tag
         self.value = value

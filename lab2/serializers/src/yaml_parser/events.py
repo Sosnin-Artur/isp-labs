@@ -1,4 +1,4 @@
-class Event(object):
+class Event(object): # pragma: no cover
     def __init__(self, start_mark=None, end_mark=None):
         self.start_mark = start_mark
         self.end_mark = end_mark

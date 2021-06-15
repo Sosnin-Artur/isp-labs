@@ -6,7 +6,7 @@ class Composer:
     def __init__(self):
         self.anchors = {}
 
-    def check_node(self):
+    def check_node(self): # pragma: no cover
         if self.check_event(StreamStartEvent):
             self.get_event()
         return not self.check_event(StreamEndEvent)
@@ -15,7 +15,7 @@ class Composer:
         if not self.check_event(StreamEndEvent):
             return self.compose_document()
 
-    def get_single_node(self):        
+    def get_single_node(self): # pragma: no cover
         self.get_event()
         document = None
         if not self.check_event(StreamEndEvent):
@@ -42,7 +42,7 @@ class Composer:
         self.anchors = {}
         return node
 
-    def compose_node(self, parent, index):
+    def compose_node(self, parent, index): # pragma: no cover
         if self.check_event(AliasEvent):
             event = self.get_event()
             anchor = event.anchor
@@ -67,7 +67,7 @@ class Composer:
         self.ascend_resolver()
         return node
 
-    def compose_scalar_node(self, anchor):
+    def compose_scalar_node(self, anchor): # pragma: no cover
         event = self.get_event()
         tag = event.tag
         if tag is None or tag == '!':
@@ -78,7 +78,7 @@ class Composer:
             self.anchors[anchor] = node
         return node
 
-    def compose_sequence_node(self, anchor):
+    def compose_sequence_node(self, anchor): # pragma: no cover
         start_event = self.get_event()
         tag = start_event.tag
         if tag is None or tag == '!':
@@ -96,7 +96,7 @@ class Composer:
         node.end_mark = end_event.end_mark
         return node
 
-    def compose_mapping_node(self, anchor):
+    def compose_mapping_node(self, anchor): # pragma: no cover
         start_event = self.get_event()
         tag = start_event.tag
         if tag is None or tag == '!':

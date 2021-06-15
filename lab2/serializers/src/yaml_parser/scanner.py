@@ -21,7 +21,7 @@ class Scanner:
         self.allow_simple_key = True
         self.possible_simple_keys = {}
 
-    def check_token(self, *choices):
+    def check_token(self, *choices): # pragma: no cover
         while self.need_more_tokens():
             self.fetch_more_tokens()
         if self.tokens:
@@ -32,7 +32,7 @@ class Scanner:
                     return True
         return False
 
-    def peek_token(self):        
+    def peek_token(self): # pragma: no cover
         while self.need_more_tokens():
             self.fetch_more_tokens()
         if self.tokens:
@@ -40,14 +40,14 @@ class Scanner:
         else:
             return None
 
-    def get_token(self):        
+    def get_token(self): # pragma: no cover
         while self.need_more_tokens():
             self.fetch_more_tokens()
         if self.tokens:
             self.tokens_taken += 1
             return self.tokens.pop(0)
 
-    def need_more_tokens(self):
+    def need_more_tokens(self): # pragma: no cover
         if self.done:
             return False
         if not self.tokens:
@@ -56,7 +56,7 @@ class Scanner:
         if self.next_possible_simple_key() == self.tokens_taken:
             return True
 
-    def fetch_more_tokens(self):
+    def fetch_more_tokens(self): # pragma: no cover
         self.scan_to_next_token()
         self.stale_possible_simple_keys()
         self.unwind_indent(self.column)
@@ -68,7 +68,6 @@ class Scanner:
             return self.fetch_document_start()
         if ch == '.' and self.check_document_end():
             return self.fetch_document_end()
-
         if ch == '[':
             return self.fetch_flow_sequence_start()
         if ch == '{':
@@ -99,7 +98,7 @@ class Scanner:
                 "found character %r that cannot start any token" % ch,
                 self.get_mark())
 
-    def next_possible_simple_key(self):
+    def next_possible_simple_key(self): # pragma: no cover
         min_token_number = None
         for level in self.possible_simple_keys:
             key = self.possible_simple_keys[level]
@@ -107,7 +106,7 @@ class Scanner:
                 min_token_number = key.token_number
         return min_token_number
 
-    def stale_possible_simple_keys(self):        
+    def stale_possible_simple_keys(self): # pragma: no cover     
         for level in list(self.possible_simple_keys):
             key = self.possible_simple_keys[level]
             if key.line != self.line  \
@@ -117,7 +116,7 @@ class Scanner:
                             "could not find expected ':'", self.get_mark())
                 del self.possible_simple_keys[level]
 
-    def save_possible_simple_key(self):        
+    def save_possible_simple_key(self):         
         required = not self.flow_level and self.indent == self.column
         if self.allow_simple_key:
             self.remove_possible_simple_key()
@@ -126,7 +125,7 @@ class Scanner:
                     self.index, self.line, self.column, self.get_mark())
             self.possible_simple_keys[self.flow_level] = key
 
-    def remove_possible_simple_key(self):
+    def remove_possible_simple_key(self): 
         if self.flow_level in self.possible_simple_keys:
             key = self.possible_simple_keys[self.flow_level]
             
@@ -223,7 +222,7 @@ class Scanner:
         end_mark = self.get_mark()
         self.tokens.append(FlowEntryToken(start_mark, end_mark))
 
-    def fetch_block_entry(self):
+    def fetch_block_entry(self): # pragma: no cover 
         if not self.flow_level:
             if not self.allow_simple_key:
                 raise ValueError(None, None,
@@ -241,7 +240,7 @@ class Scanner:
         end_mark = self.get_mark()
         self.tokens.append(BlockEntryToken(start_mark, end_mark))
 
-    def fetch_key(self):
+    def fetch_key(self): # pragma: no cover
         if not self.flow_level:
             if not self.allow_simple_key:
                 raise ValueError(None, None,
@@ -257,7 +256,7 @@ class Scanner:
         end_mark = self.get_mark()
         self.tokens.append(KeyToken(start_mark, end_mark))
 
-    def fetch_value(self):
+    def fetch_value(self): # pragma: no cover
         if self.flow_level in self.possible_simple_keys:
             key = self.possible_simple_keys[self.flow_level]
             del self.possible_simple_keys[self.flow_level]
@@ -303,14 +302,8 @@ class Scanner:
         self.tokens.append(self.scan_tag())
 
     def fetch_block_scalar(self, style):
-
-        # A simple key may follow a block scalar.
         self.allow_simple_key = True
-
-        # Reset possible simple key on the current level.
         self.remove_possible_simple_key()
-
-        # Scan and add SCALAR.
         self.tokens.append(self.scan_block_scalar(style))
 
     def fetch_single(self):
@@ -320,120 +313,53 @@ class Scanner:
         self.fetch_flow_scalar(style='"')
 
     def fetch_flow_scalar(self, style):
-
-        # A flow scalar could be a simple key.
         self.save_possible_simple_key()
-
-        # No simple keys after flow scalars.
         self.allow_simple_key = False
-
-        # Scan and add SCALAR.
         self.tokens.append(self.scan_flow_scalar(style))
 
     def fetch_plain(self):
-
-        # A plain scalar could be a simple key.
         self.save_possible_simple_key()
-
-        # No simple keys after plain scalars. But note that `scan_plain` will
-        # change this flag if the scan is finished at the beginning of the
-        # line.
         self.allow_simple_key = False
-
-        # Scan and add SCALAR. May change `allow_simple_key`.
         self.tokens.append(self.scan_plain())
 
-    # Checkers.
-
-    def check_directive(self):
-
-        # DIRECTIVE:        ^ '%' ...
-        # The '%' indicator is already checked.
+    def check_directive(self): # pragma: no cover
         if self.column == 0:
             return True
 
-    def check_document_start(self):
-
-        # DOCUMENT-START:   ^ '---' (' '|'\n')
+    def check_document_start(self): # pragma: no cover
         if self.column == 0:
             if self.prefix(3) == '---'  \
                     and self.peek(3) in '\0 \t\r\n\x85\u2028\u2029':
                 return True
 
-    def check_document_end(self):
-
-        # DOCUMENT-END:     ^ '...' (' '|'\n')
+    def check_document_end(self): 
         if self.column == 0:
             if self.prefix(3) == '...'  \
                     and self.peek(3) in '\0 \t\r\n\x85\u2028\u2029':
                 return True
 
     def check_block_entry(self):
-
-        # BLOCK-ENTRY:      '-' (' '|'\n')
         return self.peek(1) in '\0 \t\r\n\x85\u2028\u2029'
 
-    def check_key(self):
-
-        # KEY(flow context):    '?'
+    def check_key(self): # pragma: no cover
         if self.flow_level:
             return True
-
-        # KEY(block context):   '?' (' '|'\n')
         else:
             return self.peek(1) in '\0 \t\r\n\x85\u2028\u2029'
 
     def check_value(self):
-
-        # VALUE(flow context):  ':'
         if self.flow_level:
             return True
-
-        # VALUE(block context): ':' (' '|'\n')
         else:
             return self.peek(1) in '\0 \t\r\n\x85\u2028\u2029'
 
-    def check_plain(self):
-
-        # A plain scalar may start with any non-space character except:
-        #   '-', '?', ':', ',', '[', ']', '{', '}',
-        #   '#', '&', '*', '!', '|', '>', '\'', '\"',
-        #   '%', '@', '`'.
-        #
-        # It may also start with
-        #   '-', '?', ':'
-        # if it is followed by a non-space character.
-        #
-        # Note that we limit the last rule to the block context (except the
-        # '-' character) because we want the flow context to be space
-        # independent.
+    def check_plain(self):        
         ch = self.peek()
         return ch not in '\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`'  \
                 or (self.peek(1) not in '\0 \t\r\n\x85\u2028\u2029'
                         and (ch == '-' or (not self.flow_level and ch in '?:')))
 
-    # Scanners.
-
-    def scan_to_next_token(self):
-        # We ignore spaces, line breaks and comments.
-        # If we find a line break in the block context, we set the flag
-        # `allow_simple_key` on.
-        # The byte order mark is stripped if it's the first character in the
-        # stream. We do not yet support BOM inside the stream as the
-        # specification requires. Any such mark will be considered as a part
-        # of the document.
-        #
-        # TODO: We need to make tab handling rules more sane. A good rule is
-        #   Tabs cannot precede tokens
-        #   BLOCK-SEQUENCE-START, BLOCK-MAPPING-START, BLOCK-END,
-        #   KEY(block), VALUE(block), BLOCK-ENTRY
-        # So the checking code is
-        #   if <TAB>:
-        #       self.allow_simple_keys = False
-        # We also need to add the check for `allow_simple_keys == True` to
-        # `unwind_indent` before issuing BLOCK-END.
-        # Scanners for block, flow, and plain scalars need to be modified.
-
+    def scan_to_next_token(self): # pragma: no cover
         if self.index == 0 and self.peek() == '\uFEFF':
             self.forward()
         found = False
@@ -449,8 +375,7 @@ class Scanner:
             else:
                 found = True
 
-    def scan_directive(self):
-        # See the specification for details.
+    def scan_directive(self): # pragma: no cover
         start_mark = self.get_mark()
         self.forward()
         name = self.scan_directive_name(start_mark)
@@ -468,8 +393,7 @@ class Scanner:
         self.scan_directive_ignored_line(start_mark)
         return DirectiveToken(name, value, start_mark, end_mark)
 
-    def scan_directive_name(self, start_mark):
-        # See the specification for details.
+    def scan_directive_name(self, start_mark): # pragma: no cover        
         length = 0
         ch = self.peek(length)
         while '0' <= ch <= '9' or 'A' <= ch <= 'Z' or 'a' <= ch <= 'z'  \
@@ -489,8 +413,7 @@ class Scanner:
                     % ch, self.get_mark())
         return value
 
-    def scan_yaml_directive_value(self, start_mark):
-        # See the specification for details.
+    def scan_yaml_directive_value(self, start_mark): # pragma: no cover        
         while self.peek() == ' ':
             self.forward()
         major = self.scan_yaml_directive_number(start_mark)
@@ -506,8 +429,7 @@ class Scanner:
                     self.get_mark())
         return (major, minor)
 
-    def scan_yaml_directive_number(self, start_mark):
-        # See the specification for details.
+    def scan_yaml_directive_number(self, start_mark): # pragma: no cover        
         ch = self.peek()
         if not ('0' <= ch <= '9'):
             raise ValueError("while scanning a directive", start_mark,
@@ -519,8 +441,7 @@ class Scanner:
         self.forward(length)
         return value
 
-    def scan_tag_directive_value(self, start_mark):
-        # See the specification for details.
+    def scan_tag_directive_value(self, start_mark): # pragma: no cover        
         while self.peek() == ' ':
             self.forward()
         handle = self.scan_tag_directive_handle(start_mark)
@@ -529,8 +450,7 @@ class Scanner:
         prefix = self.scan_tag_directive_prefix(start_mark)
         return (handle, prefix)
 
-    def scan_tag_directive_handle(self, start_mark):
-        # See the specification for details.
+    def scan_tag_directive_handle(self, start_mark): # pragma: no cover        
         value = self.scan_tag_handle('directive', start_mark)
         ch = self.peek()
         if ch != ' ':
@@ -538,8 +458,7 @@ class Scanner:
                     "expected ' ', but found %r" % ch, self.get_mark())
         return value
 
-    def scan_tag_directive_prefix(self, start_mark):
-        # See the specification for details.
+    def scan_tag_directive_prefix(self, start_mark): # pragma: no cover        
         value = self.scan_tag_uri('directive', start_mark)
         ch = self.peek()
         if ch not in '\0 \r\n\x85\u2028\u2029':
@@ -547,8 +466,7 @@ class Scanner:
                     "expected ' ', but found %r" % ch, self.get_mark())
         return value
 
-    def scan_directive_ignored_line(self, start_mark):
-        # See the specification for details.
+    def scan_directive_ignored_line(self, start_mark): # pragma: no cover        
         while self.peek() == ' ':
             self.forward()
         if self.peek() == '#':
@@ -561,15 +479,7 @@ class Scanner:
                         % ch, self.get_mark())
         self.scan_line_break()
 
-    def scan_anchor(self, TokenClass):
-        # The specification does not restrict characters for anchors and
-        # aliases. This may lead to problems, for instance, the document:
-        #   [ *alias, value ]
-        # can be interpreted in two ways, as
-        #   [ "value" ]
-        # and
-        #   [ *alias , "value" ]
-        # Therefore we restrict aliases to numbers and ASCII letters.
+    def scan_anchor(self, TokenClass): # pragma: no cover        
         start_mark = self.get_mark()
         indicator = self.peek()
         if indicator == '*':
@@ -597,8 +507,7 @@ class Scanner:
         end_mark = self.get_mark()
         return TokenClass(value, start_mark, end_mark)
 
-    def scan_tag(self):
-        # See the specification for details.
+    def scan_tag(self): # pragma: no cover        
         start_mark = self.get_mark()
         ch = self.peek(1)
         if ch == '<':
@@ -638,9 +547,7 @@ class Scanner:
         end_mark = self.get_mark()
         return TagToken(value, start_mark, end_mark)
 
-    def scan_block_scalar(self, style):
-        # See the specification for details.
-
+    def scan_block_scalar(self, style): # pragma: no cover        
         if style == '>':
             folded = True
         else:
@@ -648,13 +555,11 @@ class Scanner:
 
         chunks = []
         start_mark = self.get_mark()
-
-        # Scan the header.
+        
         self.forward()
         chomping, increment = self.scan_block_scalar_indicators(start_mark)
         self.scan_block_scalar_ignored_line(start_mark)
 
-        # Determine the indentation level and go to the first non-empty line.
         min_indent = self.indent+1
         if min_indent < 1:
             min_indent = 1
@@ -666,7 +571,6 @@ class Scanner:
             breaks, end_mark = self.scan_block_scalar_breaks(indent)
         line_break = ''
 
-        # Scan the inner part of the block scalar.
         while self.column == indent and self.peek() != '\0':
             chunks.extend(breaks)
             leading_non_space = self.peek() not in ' \t'
@@ -677,45 +581,25 @@ class Scanner:
             self.forward(length)
             line_break = self.scan_line_break()
             breaks, end_mark = self.scan_block_scalar_breaks(indent)
-            if self.column == indent and self.peek() != '\0':
-
-                # Unfortunately, folding rules are ambiguous.
-                #
-                # This is the folding according to the specification:
+            if self.column == indent and self.peek() != '\0':                
                 
                 if folded and line_break == '\n'    \
                         and leading_non_space and self.peek() not in ' \t':
                     if not breaks:
                         chunks.append(' ')
                 else:
-                    chunks.append(line_break)
-                
-                # This is Clark Evans's interpretation (also in the spec
-                # examples):
-                #
-                #if folded and line_break == '\n':
-                #    if not breaks:
-                #        if self.peek() not in ' \t':
-                #            chunks.append(' ')
-                #        else:
-                #            chunks.append(line_break)
-                #else:
-                #    chunks.append(line_break)
+                    chunks.append(line_break)                
             else:
                 break
-
-        # Chomp the tail.
         if chomping is not False:
             chunks.append(line_break)
         if chomping is True:
             chunks.extend(breaks)
-
-        # We are done.
         return ScalarToken(''.join(chunks), False, start_mark, end_mark,
                 style)
 
-    def scan_block_scalar_indicators(self, start_mark):
-        # See the specification for details.
+    def scan_block_scalar_indicators(self, start_mark): # pragma: no cover
+        
         chomping = None
         increment = None
         ch = self.peek()
@@ -754,8 +638,7 @@ class Scanner:
                     % ch, self.get_mark())
         return chomping, increment
 
-    def scan_block_scalar_ignored_line(self, start_mark):
-        # See the specification for details.
+    def scan_block_scalar_ignored_line(self, start_mark): # pragma: no cover        
         while self.peek() == ' ':
             self.forward()
         if self.peek() == '#':
@@ -768,8 +651,7 @@ class Scanner:
                     self.get_mark())
         self.scan_line_break()
 
-    def scan_block_scalar_indentation(self):
-        # See the specification for details.
+    def scan_block_scalar_indentation(self): # pragma: no cover        
         chunks = []
         max_indent = 0
         end_mark = self.get_mark()
@@ -783,8 +665,7 @@ class Scanner:
                     max_indent = self.column
         return chunks, max_indent, end_mark
 
-    def scan_block_scalar_breaks(self, indent):
-        # See the specification for details.
+    def scan_block_scalar_breaks(self, indent): # pragma: no cover        
         chunks = []
         end_mark = self.get_mark()
         while self.column < indent and self.peek() == ' ':
@@ -796,13 +677,7 @@ class Scanner:
                 self.forward()
         return chunks, end_mark
 
-    def scan_flow_scalar(self, style):
-        # See the specification for details.
-        # Note that we loose indentation rules for quoted scalars. Quoted
-        # scalars don't need to adhere indentation because " and ' clearly
-        # mark the beginning and the end of them. Therefore we are less
-        # restrictive then the specification requires. We only need to check
-        # that document separators are not included in scalars.
+    def scan_flow_scalar(self, style):        
         if style == '"':
             double = True
         else:
@@ -847,8 +722,7 @@ class Scanner:
         'U':    8,
     }
 
-    def scan_flow_scalar_non_spaces(self, double, start_mark):
-        # See the specification for details.
+    def scan_flow_scalar_non_spaces(self, double, start_mark): # pragma: no cover
         chunks = []
         while True:
             length = 0
@@ -890,8 +764,7 @@ class Scanner:
             else:
                 return chunks
 
-    def scan_flow_scalar_spaces(self, double, start_mark):
-        # See the specification for details.
+    def scan_flow_scalar_spaces(self, double, start_mark): # pragma: no cover
         chunks = []
         length = 0
         while self.peek(length) in ' \t':
@@ -914,12 +787,9 @@ class Scanner:
             chunks.append(whitespaces)
         return chunks
 
-    def scan_flow_scalar_breaks(self, double, start_mark):
-        # See the specification for details.
+    def scan_flow_scalar_breaks(self, double, start_mark): # pragma: no cover
         chunks = []
-        while True:
-            # Instead of checking indentation, we check for document
-            # separators.
+        while True:            
             prefix = self.prefix(3)
             if (prefix == '---' or prefix == '...')   \
                     and self.peek(3) in '\0 \t\r\n\x85\u2028\u2029':
@@ -932,20 +802,11 @@ class Scanner:
             else:
                 return chunks
 
-    def scan_plain(self):
-        # See the specification for details.
-        # We add an additional restriction for the flow context:
-        #   plain scalars in the flow context cannot contain ',' or '?'.
-        # We also keep track of the `allow_simple_key` flag here.
-        # Indentation rules are loosed for the flow context.
+    def scan_plain(self): # pragma: no cover   
         chunks = []
         start_mark = self.get_mark()
         end_mark = start_mark
-        indent = self.indent+1
-        # We allow zero indentation for scalars, but then we need to check for
-        # document separators at the beginning of the line.
-        #if indent == 0:
-        #    indent = 1
+        indent = self.indent+1        
         spaces = []
         while True:
             length = 0
@@ -973,10 +834,7 @@ class Scanner:
                 break
         return ScalarToken(''.join(chunks), True, start_mark, end_mark)
 
-    def scan_plain_spaces(self, indent, start_mark):
-        # See the specification for details.
-        # The specification is really confusing about tabs in plain scalars.
-        # We just forbid them completely. Do not use tabs in YAML!
+    def scan_plain_spaces(self, indent, start_mark): # pragma: no cover        
         chunks = []
         length = 0
         while self.peek(length) in ' ':
@@ -1010,10 +868,7 @@ class Scanner:
             chunks.append(whitespaces)
         return chunks
 
-    def scan_tag_handle(self, name, start_mark):
-        # See the specification for details.
-        # For some strange reasons, the specification does not allow '_' in
-        # tag handles. I have allowed it anyway.
+    def scan_tag_handle(self, name, start_mark): # pragma: no cover        
         ch = self.peek()
         if ch != '!':
             raise ValueError("while scanning a %s" % name, start_mark,
@@ -1034,9 +889,7 @@ class Scanner:
         self.forward(length)
         return value
 
-    def scan_tag_uri(self, name, start_mark):
-        # See the specification for details.
-        # Note: we do not check if URI is well-formed.
+    def scan_tag_uri(self, name, start_mark): # pragma: no cover        
         chunks = []
         length = 0
         ch = self.peek(length)
@@ -1059,8 +912,7 @@ class Scanner:
                     "expected URI, but found %r" % ch, self.get_mark())
         return ''.join(chunks)
 
-    def scan_uri_escapes(self, name, start_mark):
-        # See the specification for details.
+    def scan_uri_escapes(self, name, start_mark): # pragma: no cover        
         codes = []
         mark = self.get_mark()
         while self.peek() == '%':
@@ -1078,15 +930,7 @@ class Scanner:
             raise ValueError("while scanning a %s" % name, start_mark, str(exc), mark)
         return value
 
-    def scan_line_break(self):
-        # Transforms:
-        #   '\r\n'      :   '\n'
-        #   '\r'        :   '\n'
-        #   '\n'        :   '\n'
-        #   '\x85'      :   '\n'
-        #   '\u2028'    :   '\u2028'
-        #   '\u2029     :   '\u2029'
-        #   default     :   ''
+    def scan_line_break(self): # pragma: no cover        
         ch = self.peek()
         if ch in '\r\n\x85':
             if self.prefix(2) == '\r\n':
