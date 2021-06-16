@@ -12,13 +12,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create your views here.
-def index(request): 
+def index(request):
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse('account:user_account'))
     else:
         return render(request, 'registration/index.html')
 
-def register(request): # pragma: no cover 
+def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         email = request.POST.get('email')

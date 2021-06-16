@@ -144,4 +144,3 @@ def test_login(client, user):
     client.post("/login/", data)
     assert client.post("/login/", username=user.username, password="qwerty123")
     assert not client.login(username=data["username"], password="qwerty123")
-

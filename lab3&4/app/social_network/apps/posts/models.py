@@ -4,11 +4,11 @@ from django.contrib.auth.models import User
 
 class Post(models.Model):
     author = models.ForeignKey(User, on_delete = models.CASCADE)
-    post_title = models.CharField('title', max_length = 150, blank = True)
-    post_text = models.TextField('post text')
-    post_image = models.ImageField('post image', blank = True, upload_to = 'images/post/')
-    post_image_url = models.ImageField('URL post image', blank = True)
-    post_time = models.DateTimeField('creation ime', blank=False)
+    post_title = models.CharField('Заголовок', max_length = 150, blank = True)
+    post_text = models.TextField('Текст поста')
+    post_image = models.ImageField('Изображение поста', blank = True, upload_to = 'images/post/')
+    post_image_url = models.ImageField('URL изображения поста', blank = True)
+    post_time = models.DateTimeField('Время создания')
     post_like = models.ManyToManyField(User,
                                         related_name='post_liked',
                                         blank=True)
@@ -20,8 +20,8 @@ class Post(models.Model):
         return str(self.post_title)
 
     class Meta:
-        verbose_name = 'post'
-        verbose_name_plural = 'posts'
+        verbose_name = 'Пост'
+        verbose_name_plural = 'Посты'
 
 
 class Like(models.Model):
@@ -38,19 +38,19 @@ class Like(models.Model):
                   default=None)
 
     class Meta:
-        verbose_name = 'like'
-        verbose_name_plural = 'likes'
+        verbose_name = 'Лайк'
+        verbose_name_plural = 'Лайки'
 
 
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete = models.CASCADE, related_name="post_comments")
     comment_author = models.ForeignKey(User, on_delete = models.CASCADE)
-    comment_text = models.CharField('comment_text', max_length = 350)
-    comment_pubdate = models.DateTimeField('pubdata')
+    comment_text = models.CharField('Текст комментария', max_length = 350)
+    comment_pubdate = models.DateTimeField('Дата публикации')
 
     def __str__(self):
         return self.comment_text
 
     class Meta:
-        verbose_name = 'comment'
-        verbose_name_plural = 'comments'
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'

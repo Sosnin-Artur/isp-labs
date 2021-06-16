@@ -14,5 +14,3 @@ pytest-cov
 pytest-django
 pytz
 sqlparse
-toml
-gunicorn
